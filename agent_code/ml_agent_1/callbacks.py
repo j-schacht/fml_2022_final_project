@@ -41,6 +41,15 @@ def act(self, game_state: dict) -> str:
     :param game_state: The dictionary that describes everything on the board.
     :return: The action to take as a string.
     """
+
+    ### !!code to test features - not the actual model!!
+    statefeatures = state_to_features(game_state)
+    neighborvalues = 0.001*statefeatures['freedomdensity'] + 1*(statefeatures['coindensity']) + 100*(statefeatures['bombdensity']) + 100*statefeatures['explosiondensity']
+    neighborvalueslist = neighborvalues.tolist()
+    action = neighborvalueslist.index(max(neighborvalueslist))
+    return ACTIONS[action]
+    ###
+
     # todo Exploration vs exploitation
     random_prob = .1
     if self.train and random.random() < random_prob:
@@ -66,6 +75,68 @@ def state_to_features(game_state: dict) -> np.array:
     :param game_state:  A dictionary describing the current game board.
     :return: np.array
     """
+
+    features = {
+
+    }
+    field = game_state['field']
+    bombs = game_state['bombs']
+    coins = game_state['coins']
+    others = game_state['others']
+    explosionmap = game_state['explosion_map']
+    ownposx, ownposy = game_state['self'][3]
+    ownpos = np.array([ownposx, ownposy])
+    fieldsize = field.shape[0]
+
+
+    notwalls = (field-abs(field))*0.5+1 # map of spaces that are not walls
+
+    freefield = abs(abs(field)-1) # map of spaces that are free to move on
+    for other in others:
+        freefield[other[3][0]][other[3][1]] = 0
+    for bomb in bombs:
+        freefield[bomb[0][0]][bomb[0][1]] = 0
+    
+    # matrix for the density calculations
+    crossmatrix = np.array([
+        [
+        1 if abs(i-j)==1 else 0 for i in range(fieldsize)
+        ] for j in range(fieldsize)
+        ])
+
+    freedommap = densitymap(freefield, freefield, crossmatrix, weight = 1, exponent = 1.2, iterations = 10)
+    features['freedomdensity'] = neighborvalues(ownpos, freedommap)
+
+    if len(coins) != 0:
+        coinmap = np.array([[0]*fieldsize]*fieldsize)
+        for coin in coins:
+            coinmap[coin[0]][coin[1]] = 1
+        coindensmap = densitymap(coinmap, freefield, crossmatrix, weight = 0.5, exponent = 1.3, iterations = 15)
+        features['coindensity'] = neighborvalues(ownpos, coindensmap)
+        features['coindensity'][4] = 0 # the own position does not contain coins
+    else:
+        features['coindensity'] = np.array([0]*5)
+
+    if len(bombs) != 0:
+        bombmap = np.array([[0]*fieldsize]*fieldsize)
+        for bomb in bombs:
+            bombmap[bomb[0][0]][bomb[0][1]] = 4-bomb[1]
+        bombdensmap = densitymap(bombmap, notwalls, crossmatrix, weight = 0.5, exponent = 1.3, iterations = 5)
+        bombdensmap = -bombdensmap + freefield
+        features['bombdensity'] = neighborvalues(ownpos, bombdensmap)
+    else:
+        features['bombdensity'] = np.array([0]*5)
+
+    if sum(sum(explosionmap)) != 0:
+        explosiondensmap = densitymap(explosionmap, freefield, crossmatrix, weight = 0.5, exponent = 1.1, iterations = 1)
+        explosiondensmap = -explosiondensmap + freefield
+        features['explosiondensity'] = neighborvalues(ownpos, explosiondensmap)
+    else:
+        features['explosiondensity'] = np.array([0]*5)
+
+
+    return features
+
     # This is the dict before the game begins and after it ends
     if game_state is None:
         return None
@@ -77,3 +148,30 @@ def state_to_features(game_state: dict) -> np.array:
     stacked_channels = np.stack(channels)
     # and return them as a vector
     return stacked_channels.reshape(-1)
+
+    
+def neighborpositions(position):
+    # returns the four adjacent tiles and the own position as a list
+    posx = position[0]
+    posy = position[1]
+    neighborpos = [[posx,posy-1],[posx+1,posy],[posx,posy+1],[posx-1,posy],[posx,posy]]
+    return neighborpos
+
+def densitymap(objectmap, freemap, crossmatrix, weight = 1, exponent = 1, iterations = 10):
+    # returns the density map of the objects in the objectmap
+    densmap = objectmap.copy()
+    for i in range(iterations):
+        densmap = np.matmul(densmap,crossmatrix)*weight+np.matmul(crossmatrix,densmap)*weight+densmap
+        densmap = (densmap*freemap)**exponent
+        densmap = densmap/(sum(sum(densmap)))
+    densmap = densmap+objectmap
+    densmap = densmap/(sum(sum(densmap)))
+    return densmap
+
+def neighborvalues(position, valuefield):
+    # returns the values of the field of the four adjacent tiles 
+    # and the current tile as a list
+    neighborval = []
+    for dirneigh in neighborpositions(position):
+        neighborval.append(valuefield[dirneigh[0]][dirneigh[1]])
+    return np.array(neighborval)
