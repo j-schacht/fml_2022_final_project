@@ -1,0 +1,13 @@
+How to measure runtime:
+
+from timeit import default_timer as timer
+
+start = timer()
+# your code
+end = timer()
+print(f"Runtime [ms]: {(end - start) * 1000}")
+
+
+Document measurement results below:
+
+- calculating distance to closest coin using graph algorithm takes about 3 ms (5 ms maximum)

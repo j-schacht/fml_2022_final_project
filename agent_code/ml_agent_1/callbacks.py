@@ -1,9 +1,8 @@
 import os
 import pickle
 import random
-
 import numpy as np
-
+from igraph import * 
 
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
 
@@ -77,8 +76,8 @@ def state_to_features(game_state: dict) -> np.array:
     """
 
     features = {
-
     }
+
     field = game_state['field']
     bombs = game_state['bombs']
     coins = game_state['coins']
@@ -87,7 +86,6 @@ def state_to_features(game_state: dict) -> np.array:
     ownposx, ownposy = game_state['self'][3]
     ownpos = np.array([ownposx, ownposy])
     fieldsize = field.shape[0]
-
 
     notwalls = (field-abs(field))*0.5+1 # map of spaces that are not walls
 
@@ -134,6 +132,44 @@ def state_to_features(game_state: dict) -> np.array:
     else:
         features['explosiondensity'] = np.array([0]*5)
 
+    # calculate distance to the closest coin using graph algorithms
+    cols = field.shape[0] # x
+    rows = field.shape[1] # y
+    coins_np = np.array(coins)
+    coins_flat = coins_np[:,0] * cols + coins_np[:,1]
+
+    g = Graph()
+    g.add_vertices(cols*rows)
+
+    for x in range(1, cols-2):
+        for y in range(1, rows-2):
+            if field[x,y] == 0:
+                if field[x+1,y] == 0:
+                    g.add_edges([(x*cols+y, (x+1)*cols+y)])
+                if field[x,y+1] == 0:
+                    g.add_edges([(x*cols+y, x*cols+y+1)])
+
+    coin_distances = g.shortest_paths(source=ownposx*cols+ownposy, target=coins_flat)
+    features['closest_coin_distance'] = np.min(coin_distances[0])
+    features['closest_3_coins_distance'] = np.sum(np.partition(coin_distances[0], 3)[0:3])
+
+    # check which directions are free to move
+    features['up_free'] = 0
+    features['down_free'] = 0
+    features['left_free'] = 0
+    features['right_free'] = 0
+
+    if field[ownposx,ownposy-1] == 0:
+        features['up_free'] = 1
+
+    if field[ownposx,ownposy+1] == 0:
+        features['down_free'] = 1
+
+    if field[ownposx-1,ownposy] == 0:
+        features['left_free'] = 1
+
+    if field[ownposx+1,ownposy] == 0:
+        features['right_free'] = 1
 
     return features
 
