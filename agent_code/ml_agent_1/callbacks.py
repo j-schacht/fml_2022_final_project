@@ -94,12 +94,23 @@ def state_to_features(game_state: dict) -> np.array:
     for bomb in bombs:
         freefield[bomb[0][0]][bomb[0][1]] = 0
     
+    # map with all zeros but the own position
+    ownposmap = np.zeros((fieldsize,fieldsize))
+    ownposmap[ownposx][ownposy] = 1
+
     # matrix for the density calculations
     crossmatrix = np.array([
         [
         1 if abs(i-j)==1 else 0 for i in range(fieldsize)
         ] for j in range(fieldsize)
         ])
+
+    # matrix for the corner calculations
+    uppermatrix = np.array([
+    [
+    1 if i-j ==1 else 0 for i in range(fieldsize)
+    ] for j in range(fieldsize)
+    ])
 
     freedommap = densitymap(freefield, freefield, crossmatrix, weight = 1, exponent = 1.2, iterations = 10)
     features['freedomdensity'] = neighborvalues(ownpos, freedommap)
@@ -130,6 +141,9 @@ def state_to_features(game_state: dict) -> np.array:
         features['explosiondensity'] = neighborvalues(ownpos, explosiondensmap)
     else:
         features['explosiondensity'] = np.array([0]*5)
+
+    # calculate number of free corners in each direction
+    features['freecorners'] = find_corners(ownposmap, freefield, crossmatrix, uppermatrix)
 
     # calculate distance to the closest coin using graph algorithms
     cols = field.shape[0] # x
@@ -198,3 +212,17 @@ def neighborvalues(position, valuefield):
     for dirneigh in neighborpositions(position):
         neighborval.append(valuefield[dirneigh[0]][dirneigh[1]])
     return np.array(neighborval)
+
+def find_corners(ownmap, freemap, crossmatrix, uppermatrix):
+    freecorners = []
+    rotatefreemap = freemap.copy()
+    for i in range(4):
+        numberofcorners = 0
+        cornermap = ownmap.copy()
+        for j in range(3):
+            cornermap = np.matmul(uppermatrix,cornermap)*rotatefreemap
+            numberofcorners += np.sum(np.matmul(cornermap,crossmatrix)*rotatefreemap)
+        freecorners.append(numberofcorners)
+        ownposmap = np.rot90(ownposmap)
+        rotatefreemap = np.rot90(rotatefreemap)
+    return np.array(freecorners)
