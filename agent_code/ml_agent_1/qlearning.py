@@ -1,7 +1,7 @@
 from collections import namedtuple
 import numpy as np
-
-from agent_code.ml_agent_1.train import Transition
+from os.path import exists
+import threading
 
 Transition = namedtuple('Transition', ('X', 'action', 'nextX', 'reward'))
 I_X = 0
@@ -45,41 +45,112 @@ class QLearningModel:
 
     attribute: buffer
         this is the experience buffer storing transitions. size is given by buffer_size.
+
+    attribute: path
+        path to the file where the trained model is stored / is to be stored.
+
+    attribute: autosave
+        set this to true to automatically save the trained model once a minute.
+
+    attribute: autosave_timer
+        timer object used for autosave functionality
+
+    attribute: training_mode
+        if true, setupTraining() has been called and the model can be trained.
     """
 
-    def __init__(self, num_features, num_actions, alpha, gamma, buffer_size, batch_size, initial_beta = None):
+    def __init__(self, num_features, num_actions, path):
         """
         Initialization of the QLearningModel.
-
+        If at the given path no model can be found, a new model will be created.
+        
         :param num_features: number of features [int]
         :param num_actions: number of actions [int]
+        :param path: path of the file to load/store the trained model [*.npy] [str]
+        """
+        assert type(num_features) is int and num_features > 0
+        assert type(num_actions) is int and num_actions > 0
+        assert type(path) is str and len(path) > 0
+
+        self.num_features = num_features
+        self.num_actions = num_actions
+        self.path = path
+        self.taining_mode = False
+
+        if exists(path):
+            file = open(path, 'rb')
+            self.beta = np.load(file)
+            config = np.load(file)
+            file.close
+
+            assert config[0] == num_features
+            assert config[1] == num_actions
+            assert self.beta.shape == (num_actions, num_features)
+
+        else: 
+            self.beta = np.zeros((num_actions, num_features))
+
+
+    def setupTraining(self, alpha, gamma, buffer_size, batch_size, initial_beta = None, autosave=False):
+        """
+        This function sets up everything needed to train the model. It needs to be called only
+        if the model is to be trained.
+        This function can only be called once!
+
         :param alpha: training rate [0.0 <= alpha <= 1.0] [float]
         :param gamma: discount factor [0.0 <= gamma <= 1.0] [float]
         :param buffer_size: size of the experience buffer [int]
         :param batch_size: size of random samples from experience buffer [0 < batch_size < buffer_size] [int]
         :param initial_beta: initial values for the beta vectors (default is zero) [np.ndarray]
+        :param autosave: if set to true, the model will be automatically saved once a minute
         """
-        assert type(num_features) is int and num_features > 0
-        assert type(num_actions) is int and num_actions > 0
         assert type(alpha) is float and alpha >= 0.0 and alpha <= 1.0
         assert type(gamma) is float and gamma >= 0.0 and gamma <= 1.0
         assert type(buffer_size) is int and buffer_size > batch_size
         assert type(batch_size) is int and batch_size > 0
+        assert type(autosave) is bool
+        assert self.taining_mode == False
 
-        if initial_beta is not None:
-            assert type(initial_beta) is np.ndarray
-            assert initial_beta.shape == (num_actions, num_features)
-            self.beta = initial_beta.copy()
-        else:
-            initial_beta = np.zeros((num_actions, num_features))
-
-        self.num_features = num_features
-        self.num_actions = num_actions
         self.alpha = alpha
         self.gamma = gamma
         self.buffer_size = buffer_size
         self.batch_size = batch_size
         self.buffer = np.zeros(buffer_size, dtype=Transition)
+        self.autosave = autosave
+        self.autosave_timer = threading.Timer(60, self.saveModel())
+        self.training_mode = True
+
+        if initial_beta is not None and not self.beta.any():
+            assert type(initial_beta) is np.ndarray
+            assert initial_beta.shape == (self.num_actions, self.num_features)
+            self.beta = initial_beta.copy()
+
+        if autosave:
+            self.autosave_timer.start()
+
+
+    def saveModel(self):
+        """
+        This function saves the current model to the file given by path attribute.
+        """
+        if not self.autosave and self.autosave_timer.is_alive:
+            self.autosave_timer.cancel()
+            
+        # so far, we are only reading num_features and num_actions from the file. 
+        # the other attributes are written to the file just in case we will need them at some point.
+        config = np.array([
+            self.num_features,
+            self.num_actions,
+            self.alpha,
+            self.gamma,
+            self.buffer_size,
+            self.batch_size
+        ])
+
+        file = open(self.path, 'wb')
+        np.save(file, self.beta)
+        np.save(file, config)
+        file.close
 
 
     def bufferAddTransition(self, transition):
@@ -145,7 +216,7 @@ class QLearningModel:
             #     = (num_features x 1) + (1x1) * (num_features x 1)
             #     = (num_features x 1)
             self.beta[i] = self.beta[i] + (self.alpha / self.batch_size) * np.sum((X[i].T * (Y[i] - np.matmul(X[i] * self.beta[i]))).T)
-        
+
 
     def Q(self, X, a):
         """
@@ -166,5 +237,4 @@ class QLearningModel:
         assert type(X) is np.ndarray and X.shape == (self.num_features,)
         return np.argmax(np.matmul(X, self.beta.T))
 
-    
     
