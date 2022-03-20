@@ -4,6 +4,7 @@ import random
 import numpy as np
 from igraph import * 
 from qlearning import *
+from datetime import date
 
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
 
@@ -17,12 +18,12 @@ def setup(self):
     after this method. This separation allows you to share your trained agent
     with other students, without revealing your training code.
 
-    In this example, our model is a set of probabilities over actions
-    that are is independent of the game state.
-
     :param self: This object is passed to all callbacks and you can set arbitrary values.
     """
-    self.model = QLearningModel(...)
+
+    path = "agent_code/ml_agent_1/"+str(date.today())+".npy" 
+    self.model = QLearningModel(self, num_features, 6,path)
+
 
 
 def act(self, game_state: dict) -> str:
@@ -43,9 +44,6 @@ def act(self, game_state: dict) -> str:
     return ACTIONS[action]
     """
 
-    statefeatures = state_to_features(game_state)
-    beta = self.beta  
-
     # eps-greedy policy:
     eps = .1
     if self.train and random.random() < eps:
@@ -53,7 +51,7 @@ def act(self, game_state: dict) -> str:
         # 80%: walk in any direction. 10% wait. 10% bomb.
         action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])
     else:
-        action = ACTIONS[np.argmax(statefeatures.dot(beta))]
+        action = ACTIONS[self.model.predictAction(self, state_to_features(game_state))]
         self.logger.debug("Querying model for action.")
 
     return action

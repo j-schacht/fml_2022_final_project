@@ -75,7 +75,7 @@ class QLearningModel:
         self.num_features = num_features
         self.num_actions = num_actions
         self.path = path
-        self.taining_mode = False
+        self.training_mode = False
 
         if exists(path):
             file = open(path, 'rb')
@@ -109,7 +109,7 @@ class QLearningModel:
         assert type(buffer_size) is int and buffer_size > batch_size
         assert type(batch_size) is int and batch_size > 0
         assert type(autosave) is bool
-        assert self.taining_mode == False
+        assert self.training_mode == False
 
         self.alpha = alpha
         self.gamma = gamma
@@ -133,7 +133,7 @@ class QLearningModel:
         """
         This function saves the current model to the file given by path attribute.
         """
-        assert self.taining_mode == True
+        assert self.training_mode == True
 
         if not self.autosave and self.autosave_timer.is_alive:
             self.autosave_timer.cancel()
@@ -165,7 +165,7 @@ class QLearningModel:
             nextX: 1D feature vector of state t+1 [np.ndarray]
             reward: absolute reward gotten after the transition [int]
         """
-        assert self.taining_mode == True
+        assert self.training_mode == True
         assert type(transition) is Transition
         assert type(transition.X) is np.ndarray and transition.X.shape == (self.num_features,)
         assert type(transition.nextX) is np.ndarray and transition.nextX.shape == (self.num_features,)
