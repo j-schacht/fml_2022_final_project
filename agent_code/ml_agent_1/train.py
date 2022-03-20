@@ -26,6 +26,8 @@ def setup_training(self):
     This is called after `setup` in callbacks.py.
 
     :param self: This object is passed to all callbacks and you can set arbitrary values.
+
+    self.model.setupTraining(...)
     """
     # Example: Setup an array that will note transition tuples
     # (s, a, r, s')
@@ -87,14 +89,18 @@ def reward_from_events(self, events: List[str]) -> int:
     game_rewards = {
         e.COIN_COLLECTED: 1,
         e.KILLED_OPPONENT: 5,
-        e.CRATE_DESTROYED: .1,
+        e.CRATE_DESTROYED: .5,
         e.MOVED_LEFT: -.1,
         e.MOVED_RIGHT: -.1,
         e.MOVED_UP: -.1,
         e.MOVED_DOWN: -.1,
+        e.WAITED: -.3,
         e.GOT_KILLED: -5,
         e.KILLED_SELF: -5,
         e.SURVIVED_ROUND: 3,
+        e.INVALID_ACTION: -3,
+        e.BOMB_DROPPED: 0,
+        e.BOMB_EXPLODED: 0
         #PLACEHOLDER_EVENT: -.1  
     }
     reward_sum = 0

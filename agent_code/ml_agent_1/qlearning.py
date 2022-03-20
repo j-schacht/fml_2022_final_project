@@ -190,7 +190,7 @@ class QLearningModel:
         Lecture reference: pp. 159-162
         """
         assert self.taining_mode == True
-        
+
         # generate a batch (= random subset of the experience buffer) for each beta-vector
         selection = np.zeros((self.num_actions, self.batch_size), dtype=int)
         for i in range(self.num_actions):
@@ -242,5 +242,3 @@ class QLearningModel:
         """
         assert type(X) is np.ndarray and X.shape == (self.num_features,)
         return np.argmax(np.matmul(X, self.beta.T))
-
-    
