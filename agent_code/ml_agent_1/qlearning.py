@@ -133,9 +133,11 @@ class QLearningModel:
         """
         This function saves the current model to the file given by path attribute.
         """
+        assert self.taining_mode == True
+
         if not self.autosave and self.autosave_timer.is_alive:
             self.autosave_timer.cancel()
-            
+
         # so far, we are only reading num_features and num_actions from the file. 
         # the other attributes are written to the file just in case we will need them at some point.
         config = np.array([
@@ -163,6 +165,7 @@ class QLearningModel:
             nextX: 1D feature vector of state t+1 [np.ndarray]
             reward: absolute reward gotten after the transition [int]
         """
+        assert self.taining_mode == True
         assert type(transition) is Transition
         assert type(transition.X) is np.ndarray and transition.X.shape == (self.num_features,)
         assert type(transition.nextX) is np.ndarray and transition.nextX.shape == (self.num_features,)
@@ -177,6 +180,7 @@ class QLearningModel:
         """
         Clear experience buffer.
         """
+        assert self.taining_mode == True
         self.buffer = np.zeros(self.buffer_size, dtype=Transition)
 
 
@@ -185,6 +189,8 @@ class QLearningModel:
         Compute new gradients by considering the transitions from the experience buffer.
         Lecture reference: pp. 159-162
         """
+        assert self.taining_mode == True
+        
         # generate a batch (= random subset of the experience buffer) for each beta-vector
         selection = np.zeros((self.num_actions, self.batch_size), dtype=int)
         for i in range(self.num_actions):
