@@ -40,24 +40,31 @@ def act(self, game_state: dict) -> str:
     :param game_state: The dictionary that describes everything on the board.
     :return: The action to take as a string.
     """
+        """
+        #!!code to test features - not the actual model!!
+        statefeatures = state_to_features(game_state)
+        neighborvalues = 0.001*statefeatures['freedomdensity'] + 1*(statefeatures['coindensity']) + 100*(statefeatures['bombdensity']) + 100*statefeatures['explosiondensity']
+        neighborvalueslist = neighborvalues.tolist()
+        action = neighborvalueslist.index(max(neighborvalueslist))
+        return ACTIONS[action]
+        """
 
-    ### !!code to test features - not the actual model!!
     statefeatures = state_to_features(game_state)
-    neighborvalues = 0.001*statefeatures['freedomdensity'] + 1*(statefeatures['coindensity']) + 100*(statefeatures['bombdensity']) + 100*statefeatures['explosiondensity']
-    neighborvalueslist = neighborvalues.tolist()
-    action = neighborvalueslist.index(max(neighborvalueslist))
-    return ACTIONS[action]
-    ###
+    beta = 0 #!!! missing 
 
-    # todo Exploration vs exploitation
-    random_prob = .1
-    if self.train and random.random() < random_prob:
+    # eps-greedy policy:
+    eps = .1
+    if self.train and random.random() < eps:
         self.logger.debug("Choosing action purely at random.")
         # 80%: walk in any direction. 10% wait. 10% bomb.
-        return np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])
+        action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])
+    else:
+        action = ACTIONS[np.argmax(statefeatures.dot(beta))]
 
-    self.logger.debug("Querying model for action.")
-    return np.random.choice(ACTIONS, p=self.model)
+
+        self.logger.debug("Querying model for action.")
+
+    return action
 
 
 def state_to_features(game_state: dict) -> np.array:

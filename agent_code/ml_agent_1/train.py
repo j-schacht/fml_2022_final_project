@@ -13,6 +13,7 @@ Transition = namedtuple('Transition',
 # Hyper parameters -- DO modify
 TRANSITION_HISTORY_SIZE = 3  # keep only ... last transitions
 RECORD_ENEMY_TRANSITIONS = 1.0  # record enemy transitions with probability ...
+# epsilon is found in callbacks: act
 
 # Events
 PLACEHOLDER_EVENT = "PLACEHOLDER"
@@ -58,6 +59,8 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     self.transitions.append(Transition(state_to_features(old_game_state), self_action, state_to_features(new_game_state), reward_from_events(self, events)))
 
 
+
+
 def end_of_round(self, last_game_state: dict, last_action: str, events: List[str]):
     """
     Called at the end of each game or when the agent died to hand out final rewards.
@@ -80,16 +83,19 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
 
 
 def reward_from_events(self, events: List[str]) -> int:
-    """
-    *This is not a required function, but an idea to structure your code.*
-
-    Here you can modify the rewards your agent get so as to en/discourage
-    certain behavior.
-    """
+    
     game_rewards = {
         e.COIN_COLLECTED: 1,
         e.KILLED_OPPONENT: 5,
-        PLACEHOLDER_EVENT: -.1  # idea: the custom event is bad
+        e.CRATE_DESTROYED: .1,
+        e.MOVED_LEFT: -.1,
+        e.MOVED_RIGHT: -.1,
+        e.MOVED_UP: -.1,
+        e.MOVED_DOWN: -.1,
+        e.GOT_KILLED: -5,
+        e.KILLED_SELF: -5,
+        e.SURVIVED_ROUND: 3,
+        #PLACEHOLDER_EVENT: -.1  
     }
     reward_sum = 0
     for event in events:
