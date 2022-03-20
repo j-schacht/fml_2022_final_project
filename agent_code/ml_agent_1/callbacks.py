@@ -51,7 +51,7 @@ def act(self, game_state: dict) -> str:
         """
 
     statefeatures = state_to_features(game_state)
-    beta = 0 #!!! missing 
+    beta = self.beta  
 
     # eps-greedy policy:
     eps = .1
