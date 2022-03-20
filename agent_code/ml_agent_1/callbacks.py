@@ -3,6 +3,7 @@ import pickle
 import random
 import numpy as np
 from igraph import * 
+#from qlearning import *
 
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
 
