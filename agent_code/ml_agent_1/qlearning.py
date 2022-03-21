@@ -128,13 +128,14 @@ class QLearningModel:
         self.batch_size = batch_size
         self.buffer = np.zeros(buffer_size, dtype=Transition)
         self.autosave = autosave
-        self.autosave_timer = threading.Timer(60, self.saveModel())
         self.training_mode = True
 
         if initial_beta is not None and not self.beta.any():
             assert type(initial_beta) is np.ndarray
             assert initial_beta.shape == (self.num_actions, self.num_features)
             self.beta = initial_beta.copy()
+
+        self.autosave_timer = threading.Timer(60, self.saveModel())
 
         if autosave:
             self.autosave_timer.start()
