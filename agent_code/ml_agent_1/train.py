@@ -1,13 +1,14 @@
 from typing import List
 import events as e
 from .callbacks import state_to_features
-from agent_code.ml_agent_1.qlearning import *
+from .callbacks import ACTIONS
+from .qlearning import *
 
 # Hyper parameters 
-ALPHA =         0.05
+ALPHA =         0.1
 GAMMA =         0.9
-BUFFER_SIZE =   100
-BATCH_SIZE =    20
+BUFFER_SIZE =   20
+BATCH_SIZE =    5
 # epsilon is found in callbacks.py
 
 # Events
@@ -27,7 +28,9 @@ def setup_training(self):
     self.buffer_size = BUFFER_SIZE
     self.batch_size = BATCH_SIZE
 
-    self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE, autosave=True)
+    self.counter = 0
+
+    self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE)
 
     
 def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_state: dict, events: List[str]):
@@ -47,6 +50,9 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     :param new_game_state: The state the agent is in now.
     :param events: The events that occurred when going from  `old_game_state` to `new_game_state`
     """
+    if not old_game_state or not new_game_state:
+        return
+
     self.logger.debug(f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}')
 
     # Idea: Add your own events to hand out rewards
@@ -56,13 +62,17 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     # state_to_features is defined in callbacks.py
     t = Transition(
         state_to_features(old_game_state),
-        self_action,
+        ACTIONS.index(self_action),
         state_to_features(new_game_state),
         reward_from_events(self, events)
     )
 
     self.model.bufferAddTransition(t)
-    self.model.gradientUpdate()
+
+    if self.counter >= BUFFER_SIZE:
+        self.model.gradientUpdate()
+    else:
+        self.counter = self.counter + 1
 
 
 def end_of_round(self, last_game_state: dict, last_action: str, events: List[str]):
@@ -85,25 +95,25 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
 def reward_from_events(self, events: List[str]) -> int:
     
     game_rewards = {
-        e.MOVED_LEFT: -.1,
-        e.MOVED_RIGHT: -.1,
-        e.MOVED_UP: -.1,
-        e.MOVED_DOWN: -.1,
-        e.WAITED: -.3,
-        e.INVALID_ACTION: -3,
+        e.MOVED_LEFT: -1,
+        e.MOVED_RIGHT: -1,
+        e.MOVED_UP: -1,
+        e.MOVED_DOWN: -1,
+        e.WAITED: -3,
+        e.INVALID_ACTION: -30,
 
-        e.BOMB_DROPPED: 0,
+        e.BOMB_DROPPED: -50,
         e.BOMB_EXPLODED: 0,
 
-        e.CRATE_DESTROYED: .5,
+        e.CRATE_DESTROYED: 5,
         e.COIN_FOUND: 0,
-        e.COIN_COLLECTED: 1,
+        e.COIN_COLLECTED: 10,
 
-        e.KILLED_OPPONENT: 5,
-        e.KILLED_SELF: -5,
-        e.GOT_KILLED: -5,
+        e.KILLED_OPPONENT: 50,
+        e.KILLED_SELF: -50,
+        e.GOT_KILLED: -50,
         e.OPPONENT_ELIMINATED: 0,
-        e.SURVIVED_ROUND: 3,
+        e.SURVIVED_ROUND: 30,
         #PLACEHOLDER_EVENT: -.1  
     }
 

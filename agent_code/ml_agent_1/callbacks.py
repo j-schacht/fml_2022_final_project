@@ -1,12 +1,12 @@
 import random
 import numpy as np
 from igraph import * 
-from agent_code.ml_agent_1.qlearning import *
+from .qlearning import *
 
 EPSILON = 0.2
 
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
-NUM_FEATURES = 34
+NUM_FEATURES = 4
 
 def setup(self):
     """
@@ -45,7 +45,8 @@ def act(self, game_state: dict) -> str:
     if self.train and random.random() < self.epsilon:
         self.logger.debug("Choosing action purely at random.")
         # 80%: walk in any direction. 10% wait. 10% bomb.
-        action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])
+        #action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])
+        action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .2, 0])  # only temporary
     else:
         self.logger.debug("Querying model for action.")
         action = ACTIONS[self.model.predictAction(state_to_features(game_state))]
@@ -112,25 +113,25 @@ def state_to_features(game_state: dict) -> np.array:
         ] for j in range(rows)])
 
 
-    freedommap = densitymap(freefield, freefield, crossmatrix, weight = 1, exponent = 1.1, iterations = 10)
+    freedommap = densitymap(freefield, freefield, crossmatrix, weight = 0.1, exponent = 1, iterations = 10)
     features['freedomdensity'] = neighborvalues(ownpos, freedommap)
 
     if len(coins) != 0:
-        coindensmap = densitymap(coinmap, freefield, crossmatrix, weight = 0.5, exponent = 1.1, iterations = 15)
+        coindensmap = densitymap(coinmap, freefield, crossmatrix, weight = 0.05, exponent = 1, iterations = 15)
         features['coindensity'] = neighborvalues(ownpos, coindensmap)
         features['coindensity'].pop(4) # the own position does not contain coins
     else:
         features['coindensity'] = [0]*4
 
     if len(bombs) != 0:
-        bombdensmap = densitymap(bombsmap, notwallsmap, crossmatrix, weight = 0.5, exponent = 1.3, iterations = 5)
+        bombdensmap = densitymap(bombsmap, notwallsmap, crossmatrix, weight = 0.5, exponent = 1, iterations = 5)
         bombdensmap = -bombdensmap + freefield
         features['bombdensity'] = neighborvalues(ownpos, bombdensmap)
     else:
         features['bombdensity'] = [0]*5
 
     if sum(sum(explosionmap)) != 0:
-        explosiondensmap = densitymap(explosionmap, freefield, crossmatrix, weight = 0.5, exponent = 1.1, iterations = 1)
+        explosiondensmap = densitymap(explosionmap, freefield, crossmatrix, weight = 0.5, exponent = 1, iterations = 1)
         explosiondensmap = -explosiondensmap + freefield
         features['explosiondensity'] = neighborvalues(ownpos, explosiondensmap)
     else:
@@ -202,7 +203,8 @@ def state_to_features(game_state: dict) -> np.array:
     # blastables:4
     # closest_coin_distance:1
     # closest_3_coins_distance:1
-    usedfeatures = ['freedomdensity','coindensity','bombdensity','explosiondensity','freecorners','blastables','closest_coin_distance','closest_3_coins_distance']
+    #usedfeatures = ['freedomdensity','coindensity','bombdensity','explosiondensity','freecorners','blastables','closest_coin_distance','closest_3_coins_distance']
+    usedfeatures = ['coindensity']
     featurearray = features_dict_to_array(features, usedfeatures)
     return featurearray
 
@@ -262,7 +264,7 @@ def find_blastables(ownmap, blastablesmap, notwallsmap, crossmatrix):
         for j in range(3):
             blastmap = np.matmul(uppermatrix,blastmap)*notwallsmap
             numberofblastables += np.sum(blastmap*notwallsmap)
-        blastables.append(numberofcorners)
+        blastables.append(numberofblastables)
         ownmap = np.rot90(ownmap)
         notwallsmap = np.rot90(notwallsmap)
         blastablesmap = np.rot90(blastablesmap)

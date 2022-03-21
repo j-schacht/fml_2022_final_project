@@ -1,4 +1,5 @@
 from collections import namedtuple
+from select import select
 import numpy as np
 from os.path import exists
 import threading
@@ -6,10 +7,6 @@ import os.path
 from datetime import datetime
 
 Transition = namedtuple('Transition', ('X', 'action', 'nextX', 'reward'))
-I_X = 0
-I_ACTION = 1
-I_NEXTX = 2
-I_REWARD = 3
 
 class QLearningModel:
     """ 
@@ -88,8 +85,8 @@ class QLearningModel:
 
         self.training_mode = False
 
-        if exists(path):
-            file = open(path, 'rb')
+        if exists(self.path):
+            file = open(self.path, 'rb')
             self.beta = np.load(file)
             config = np.load(file)
             file.close()
@@ -126,7 +123,13 @@ class QLearningModel:
         self.gamma = gamma
         self.buffer_size = buffer_size
         self.batch_size = batch_size
-        self.buffer = np.zeros(buffer_size, dtype=Transition)
+
+        # one buffer for each attribute of Transition type
+        self.buffer_X = np.zeros((buffer_size, self.num_features))
+        self.buffer_action = np.zeros((buffer_size))
+        self.buffer_nextX = np.zeros((buffer_size, self.num_features))
+        self.buffer_reward = np.zeros((buffer_size))
+
         self.autosave = autosave
         self.training_mode = True
 
@@ -147,8 +150,8 @@ class QLearningModel:
         """
         assert self.training_mode == True
 
-        if not self.autosave and self.autosave_timer.is_alive:
-            self.autosave_timer.cancel()
+        #if not self.autosave and self.autosave_timer.is_alive:
+        #    self.autosave_timer.cancel()
 
         # so far, we are only reading num_features and num_actions from the file. 
         # the other attributes are written to the file just in case we will need them at some point.
@@ -189,8 +192,15 @@ class QLearningModel:
         assert type(transition.action) is int
         assert type(transition.reward) is int
 
-        np.roll(self.buffer, 1, axis=0)
-        self.buffer[0] = transition
+        self.buffer_X = np.roll(self.buffer_X, 1, axis=0)
+        self.buffer_action = np.roll(self.buffer_action, 1, axis=0)
+        self.buffer_nextX = np.roll(self.buffer_nextX, 1, axis=0)
+        self.buffer_reward = np.roll(self.buffer_reward, 1, axis=0)
+
+        self.buffer_X[0] = transition.X
+        self.buffer_action[0] = transition.action
+        self.buffer_nextX[0] = transition.nextX
+        self.buffer_reward[0] = transition.reward
 
 
     def bufferClear(self):
@@ -198,7 +208,10 @@ class QLearningModel:
         Clear experience buffer.
         """
         assert self.training_mode == True
-        self.buffer = np.zeros(self.buffer_size, dtype=Transition)
+        self.buffer_X = np.zeros((self.buffer_size, self.num_features))
+        self.buffer_action = np.zeros(self.buffer_size)
+        self.buffer_nextX = np.zeros((self.buffer_size, self.num_features))
+        self.buffer_reward = np.zeros(self.buffer_size)
 
 
     def gradientUpdate(self):
@@ -208,14 +221,19 @@ class QLearningModel:
         """
         assert self.training_mode == True
 
+        #print("Beta[0]:")
+        #print(self.beta[0])
+        #print("Beta[1]:")
+        #print(self.beta[1])
+
         # generate a batch (= random subset of the experience buffer) for each beta-vector
         selection = np.zeros((self.num_actions, self.batch_size), dtype=int)
         for i in range(self.num_actions):
             selection[i] = np.random.choice(self.buffer_size, size=self.batch_size, replace=False)
 
-        X = self.buffer[selection][:,:,I_X]             # dim: (num_actions x batch_size x num_features)
-        nextX = self.buffer[selection][:,:,I_NEXTX]     # dim: (num_actions x batch_size x num_features)
-        reward = self.buffer[selection][:,:,I_REWARD]   # dim: (num_actions x batch_size x 1)
+        X = self.buffer_X[selection]             # dim: (num_actions x batch_size x num_features)
+        nextX = self.buffer_nextX[selection]     # dim: (num_actions x batch_size x num_features)
+        reward = self.buffer_reward[selection]   # dim: (num_actions x batch_size x 1)
 
         # find maximum value of Q for nextX and any possible action
         # lecture reference: p. 160
@@ -224,11 +242,23 @@ class QLearningModel:
         #     = (num_actions x batch_size x 1) 
         maxQ = np.max(np.matmul(nextX, self.beta.T), axis=2)
 
+        print("nextX:")
+        print(nextX)
+        print("self.beta")
+        print(self.beta)
+        print("nextX * beta^T:")
+        print(np.matmul(nextX, self.beta.T))
+        print("np.max(axis=2):")
+        print(maxQ)
+
         # calculate expected response Y
         # # lecture reference: p. 160
         # dim:  (num_actions x batch_size x 1) + ((1x1) * (num_actions x batch_size x 1))
         #     = (num_actions x batch_size x 1)
         Y = reward + (self.gamma * maxQ)
+
+        #print("sum([0]):")
+        #print(np.sum((X[0].T * (Y[0] - np.matmul(X[0], self.beta[0]))).T, axis=0))
 
         # calculate the new beta-vectors (= gradient update)
         for i in range(self.num_actions):
@@ -238,7 +268,18 @@ class QLearningModel:
             #     = (num_features x 1) + (1x1) * sum((batch_size x num_features), axis=0)
             #     = (num_features x 1) + (1x1) * (num_features x 1)
             #     = (num_features x 1)
-            self.beta[i] = self.beta[i] + (self.alpha / self.batch_size) * np.sum((X[i].T * (Y[i] - np.matmul(X[i] * self.beta[i]))).T)
+            self.beta[i] = self.beta[i] + (self.alpha / self.batch_size) * np.sum((X[i].T * (Y[i] - np.matmul(X[i], self.beta[i]))).T, axis=0)
+
+        #if np.sum(self.beta) != 0:
+        #    self.beta = self.beta / np.sum(self.beta)
+
+        #print("maxQ:")
+        #print(maxQ)
+        #print("Y:")
+        #print(Y)
+        #print("X[0]:")
+        #print(X[0])
+
 
     def nstep_gradientUpdate(self,n):
 
@@ -246,9 +287,9 @@ class QLearningModel:
         assert n < self.buffer_size
 
         # how to access the namedtuple? or is it a numpy.array? !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        X = self.buffer[:,I_X]                      # dim: (buffer_size x num_features)
-        nextX = self.buffer[:,I_NEXTX]              # dim: (buffer_size x num_features)
-        reward = self.buffer[:,I_REWARD]            # dim: (buffer_size x 1)
+        X = self.buffer_X                      # dim: (buffer_size x num_features)
+        nextX = self.buffer_nextX              # dim: (buffer_size x num_features)
+        reward = self.buffer_reward            # dim: (buffer_size x 1)
 
         # find maximum value of Q for nextX and any possible action 
         maxQ = np.max(np.matmul(nextX, self.beta.T), axis=2)
