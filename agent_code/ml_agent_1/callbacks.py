@@ -261,5 +261,5 @@ def find_blastables(ownmap, blastablesmap, notwallsmap, crossmatrix):
 def features_dict_to_array(features, usedfeatures):
     featurearray = []
     for usedfeature in usedfeatures:
-        featurearray.append(feaures[usedfeature])
+        featurearray.extend(features[usedfeature])
     return np.array(featurearray)
