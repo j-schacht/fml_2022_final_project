@@ -78,73 +78,70 @@ def state_to_features(game_state: dict) -> np.array:
     explosionmap = game_state['explosion_map']
     ownposx, ownposy = game_state['self'][3]
     ownpos = np.array([ownposx, ownposy])
-    fieldsize = field.shape[0]
+    cols = field.shape[0] # x
+    rows = field.shape[1] # y
 
-    othersmap = np.zeros((fieldsize,fieldsize))
+    # map with all zeros but the own position
+    ownposmap = np.zeros((cols,rows))
+    ownposmap[ownposx][ownposy] = 1
+
+    othersmap = np.zeros((cols,rows))
     for other in others:
         othersmap[other[3][0]][other[3][1]] = 1
 
-    bombsmap = np.zeros((fieldsize,fieldsize))
+    coinmap = np.zeros((cols,rows))
+    for coin in coins:
+        coinmap[coin[0]][coin[1]] = 1
+
+    bombsmap = np.zeros((cols,rows))
     for bomb in bombs:
-        bombsmap[bomb[0][0]][bomb[0][1]] = 1
+        bombsmap[bomb[0][0]][bomb[0][1]] = 4-bomb[1]
 
     wallsmap = (abs(field)-field)*0.5
-
     notwallsmap = -wallsmap+1
-    
     cratesmap = (field-abs(field))*0.5
 
     # map of spaces that are free to move on
-    freefield = np.ones((fieldsize,fieldsize)) -wallsmap -bombsmap -othersmap
+    freefield = np.ones((cols,rows)) -wallsmap -bombsmap -othersmap
     
     # map of spaces that have blastable objects
     blastablesmap = cratesmap + othersmap
 
-    # map with all zeros but the own position
-    ownposmap = np.zeros((fieldsize,fieldsize))
-    ownposmap[ownposx][ownposy] = 1
-
     # matrix for the density calculations
     crossmatrix = np.array([[
-        1 if abs(i-j)==1 else 0 for i in range(fieldsize)
-        ] for j in range(fieldsize)])
+        1 if abs(i-j)==1 else 0 for i in range(cols)
+        ] for j in range(rows)])
 
 
-    freedommap = densitymap(freefield, freefield, crossmatrix, weight = 1, exponent = 1.2, iterations = 10)
+    freedommap = densitymap(freefield, freefield, crossmatrix, weight = 1, exponent = 1.1, iterations = 10)
     features['freedomdensity'] = neighborvalues(ownpos, freedommap)
 
     if len(coins) != 0:
-        coinmap = np.array([[0]*fieldsize]*fieldsize)
-        for coin in coins:
-            coinmap[coin[0]][coin[1]] = 1
-        coindensmap = densitymap(coinmap, freefield, crossmatrix, weight = 0.5, exponent = 1.3, iterations = 15)
+        coindensmap = densitymap(coinmap, freefield, crossmatrix, weight = 0.5, exponent = 1.1, iterations = 15)
         features['coindensity'] = neighborvalues(ownpos, coindensmap)
-        features['coindensity'][4] = 0 # the own position does not contain coins
+        features['coindensity'].pop(4) # the own position does not contain coins
     else:
-        features['coindensity'] = np.array([0]*5)
+        features['coindensity'] = [0]*4
 
     if len(bombs) != 0:
-        bombmap = np.array([[0]*fieldsize]*fieldsize)
-        for bomb in bombs:
-            bombmap[bomb[0][0]][bomb[0][1]] = 4-bomb[1]
-        bombdensmap = densitymap(bombmap, notwallsmap, crossmatrix, weight = 0.5, exponent = 1.3, iterations = 5)
+        bombdensmap = densitymap(bombsmap, notwallsmap, crossmatrix, weight = 0.5, exponent = 1.3, iterations = 5)
         bombdensmap = -bombdensmap + freefield
         features['bombdensity'] = neighborvalues(ownpos, bombdensmap)
     else:
-        features['bombdensity'] = np.array([0]*5)
+        features['bombdensity'] = [0]*5
 
     if sum(sum(explosionmap)) != 0:
         explosiondensmap = densitymap(explosionmap, freefield, crossmatrix, weight = 0.5, exponent = 1.1, iterations = 1)
         explosiondensmap = -explosiondensmap + freefield
         features['explosiondensity'] = neighborvalues(ownpos, explosiondensmap)
     else:
-        features['explosiondensity'] = np.array([0]*5)
+        features['explosiondensity'] = [0]*5
 
     # number of free corners in each direction
     features['freecorners'] = find_corners(ownposmap, freefield, crossmatrix)
 
     # number of objects that can be destroyed in each direction
-    features['blastables'] = find_blastables(ownmap, blastablesmap, notwallsmap, crossmatrix)
+    features['blastables'] = find_blastables(ownposmap, blastablesmap, notwallsmap, crossmatrix)
 
     # calculate distance to the closest coin using graph algorithms
     if len(coins) > 0:
@@ -165,34 +162,47 @@ def state_to_features(game_state: dict) -> np.array:
                         g.add_edges([(x*cols+y, x*cols+y+1)])
 
         coin_distances = g.shortest_paths(source=ownposx*cols+ownposy, target=coins_flat)
-        features['closest_coin_distance'] = np.min(coin_distances[0])
+        closest_coin_distance = np.min(coin_distances[0])
         max3 = min(3, len(coin_distances[0]))
-        features['closest_3_coins_distance'] = np.sum(np.partition(coin_distances[0], max3-1)[0:max3])
+        closest_3_coins_distance = np.sum(np.partition(coin_distances[0], max3-1)[0:max3])
 
-        if features['closest_coin_distance'] == float("inf"):
-            features['closest_coin_distance'] = 1000
-        if features['closest_3_coins_distance'] == float("inf"):
-            features['closest_3_coins_distance'] = 1000
+        if closest_coin_distance == float("inf"):
+            closest_coin_distance = 1000
+        if closest_3_coins_distance == float("inf"):
+            closest_3_coins_distance = 1000
+
+        features['closest_coin_distance'] = [closest_coin_distance]
+        features['closest_3_coins_distance'] = [closest_3_coins_distance]
 
     # check which directions are free to move
-    features['up_free'] = 0
-    features['down_free'] = 0
-    features['left_free'] = 0
-    features['right_free'] = 0
+    features['up_free'] = [0]
+    features['down_free'] = [0]
+    features['left_free'] = [0]
+    features['right_free'] = [0]
 
     if field[ownposx,ownposy-1] == 0:
-        features['up_free'] = 1
+        features['up_free'] = [1]
 
     if field[ownposx,ownposy+1] == 0:
-        features['down_free'] = 1
+        features['down_free'] = [1]
 
     if field[ownposx-1,ownposy] == 0:
-        features['left_free'] = 1
+        features['left_free'] = [1]
 
     if field[ownposx+1,ownposy] == 0:
-        features['right_free'] = 1
+        features['right_free'] = [1]
 
-    return features
+    # freedomdensity:5
+    # coindensity:4
+    # bombdensity:5
+    # explosiondensity:5
+    # freecorners:4
+    # blastables:4
+    # closest_coin_distance:1
+    # closest_3_coins_distance:1
+    usedfeatures = ['freedomdensity','coindensity','bombdensity','explosiondensity','freecorners','blastables','closest_coin_distance','closest_3_coins_distance']
+    featurearray = features_dict_to_array(features, usedfeatures)
+    return featurearray
 
     
 def neighborpositions(position):
@@ -208,9 +218,9 @@ def densitymap(objectmap, freemap, crossmatrix, weight = 1, exponent = 1, iterat
     for i in range(iterations):
         densmap = np.matmul(densmap,crossmatrix)*weight+np.matmul(crossmatrix,densmap)*weight+densmap
         densmap = (densmap*freemap)**exponent
-        densmap = densmap/(sum(sum(densmap)))
+        #densmap = densmap/(sum(sum(densmap)))
     densmap = densmap+objectmap
-    densmap = densmap/(sum(sum(densmap)))
+    #densmap = densmap/(sum(sum(densmap)))
     return densmap
 
 def neighborvalues(position, valuefield):
@@ -219,7 +229,7 @@ def neighborvalues(position, valuefield):
     neighborval = []
     for dirneigh in neighborpositions(position):
         neighborval.append(valuefield[dirneigh[0]][dirneigh[1]])
-    return np.array(neighborval)
+    return neighborval
 
 def find_corners(ownmap, freemap, crossmatrix):
     uppermatrix = np.array([[
@@ -234,14 +244,14 @@ def find_corners(ownmap, freemap, crossmatrix):
             cornermap = np.matmul(uppermatrix,cornermap)*freemap
             numberofcorners += np.sum(np.matmul(cornermap,crossmatrix)*freemap)
         freecorners.append(numberofcorners)
-        ownposmap = np.rot90(ownposmap)
+        ownmap = np.rot90(ownmap)
         freemap = np.rot90(freemap)
-    return np.array(freecorners)
+    return freecorners
 
 def find_blastables(ownmap, blastablesmap, notwallsmap, crossmatrix):
     uppermatrix = np.array([[
-        1 if i-j ==1 else 0 for i in range(freemap.shape[0])
-        ] for j in range(freemap.shape[1])])
+        1 if i-j ==1 else 0 for i in range(ownmap.shape[0])
+        ] for j in range(ownmap.shape[1])])
 
     blastables = []
     for i in range(4):
@@ -251,7 +261,13 @@ def find_blastables(ownmap, blastablesmap, notwallsmap, crossmatrix):
             blastmap = np.matmul(uppermatrix,blastmap)*notwallsmap
             numberofblastables += np.sum(blastmap*notwallsmap)
         blastables.append(numberofcorners)
-        ownposmap = np.rot90(ownposmap)
+        ownmap = np.rot90(ownmap)
         notwallsmap = np.rot90(notwallsmap)
         blastablesmap = np.rot90(blastablesmap)
-    return np.array(blastables)
+    return blastables
+
+def features_dict_to_array(features, usedfeatures):
+    featurearray = []
+    for usedfeature in usedfeatures:
+        featurearray.extend(features[usedfeature])
+    return np.array(featurearray)
