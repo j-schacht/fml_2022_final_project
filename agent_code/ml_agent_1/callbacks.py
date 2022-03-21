@@ -260,7 +260,7 @@ def find_blastables(ownmap, blastablesmap, notwallsmap, crossmatrix):
         for j in range(3):
             blastmap = np.matmul(uppermatrix,blastmap)*notwallsmap
             numberofblastables += np.sum(blastmap*notwallsmap)
-        blastables.append(numberofcorners)
+        blastables.append(numberofblastables)
         ownmap = np.rot90(ownmap)
         notwallsmap = np.rot90(notwallsmap)
         blastablesmap = np.rot90(blastablesmap)
