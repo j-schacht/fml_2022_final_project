@@ -180,7 +180,7 @@ class QLearningModel:
         """
         Clear experience buffer.
         """
-        assert self.taining_mode == True
+        assert self.training_mode == True
         self.buffer = np.zeros(self.buffer_size, dtype=Transition)
 
 
@@ -189,7 +189,7 @@ class QLearningModel:
         Compute new gradients by considering the transitions from the experience buffer.
         Lecture reference: pp. 159-162
         """
-        assert self.taining_mode == True
+        assert self.training_mode == True
 
         # generate a batch (= random subset of the experience buffer) for each beta-vector
         selection = np.zeros((self.num_actions, self.batch_size), dtype=int)
@@ -222,6 +222,29 @@ class QLearningModel:
             #     = (num_features x 1) + (1x1) * (num_features x 1)
             #     = (num_features x 1)
             self.beta[i] = self.beta[i] + (self.alpha / self.batch_size) * np.sum((X[i].T * (Y[i] - np.matmul(X[i] * self.beta[i]))).T)
+
+    def nstep_gradientUpdate(self,n):
+
+        assert self.training_mode == True
+        assert n < self.buffer_size
+
+        # how to access the namedtuple? or is it a numpy.array? !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        X = self.buffer[:,I_X]                      # dim: (buffer_size x num_features)
+        nextX = self.buffer[:,I_NEXTX]              # dim: (buffer_size x num_features)
+        reward = self.buffer[:,I_REWARD]            # dim: (buffer_size x 1)
+
+        # find maximum value of Q for nextX and any possible action 
+        maxQ = np.max(np.matmul(nextX, self.beta.T), axis=2)
+
+        # calculate Y and insert into reward array
+        for i in range(self.buffer_size - n): # I think this is expensive as long as not vectorized ...to be continued
+            reward[i+n] = reward[i-1:i-1+n].sum() 
+
+        # calculate expected response Y
+        Y = reward + ((self.gamma**n) * maxQ)
+        for i in range(self.num_actions):
+            self.beta[i] = self.beta[i] + (self.alpha / self.buffer_size) * np.sum((X[i].T * (Y[i] - np.matmul(X[i] * self.beta[i]))).T)
+
 
 
     def Q(self, X, a):

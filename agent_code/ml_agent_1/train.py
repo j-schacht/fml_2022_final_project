@@ -37,6 +37,8 @@ def setup_training(self):
     self.transitions = deque(maxlen=buffer_size)
     self.model.setupTraining(self, alpha, gamma, buffer_size, batch_size, initial_beta = None, autosave=False)
 
+    
+
 
 def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_state: dict, events: List[str]):
     """
@@ -63,7 +65,7 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
 
     # state_to_features is defined in callbacks.py
     self.transitions.append(Transition(state_to_features(old_game_state), self_action, state_to_features(new_game_state), reward_from_events(self, events)))
-
+    gradientUpdate(self)
 
 
 
