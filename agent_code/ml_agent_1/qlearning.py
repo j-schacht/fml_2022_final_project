@@ -2,6 +2,8 @@ from collections import namedtuple
 import numpy as np
 from os.path import exists
 import threading
+import os.path
+from datetime import datetime
 
 Transition = namedtuple('Transition', ('X', 'action', 'nextX', 'reward'))
 I_X = 0
@@ -49,6 +51,9 @@ class QLearningModel:
     attribute: path
         path to the file where the trained model is stored / is to be stored.
 
+    attribute: backup_path
+        path to the backup file where the trained model is stored / is to be stored. 
+
     attribute: autosave
         set this to true to automatically save the trained model once a minute.
 
@@ -59,14 +64,14 @@ class QLearningModel:
         if true, setupTraining() has been called and the model can be trained.
     """
 
-    def __init__(self, num_features, num_actions, path):
+    def __init__(self, num_features, num_actions, path="model"):
         """
         Initialization of the QLearningModel.
         If at the given path no model can be found, a new model will be created.
         
         :param num_features: number of features [int]
         :param num_actions: number of actions [int]
-        :param path: path of the file to load/store the trained model [*.npy] [str]
+        :param path: path of the file to load/store the trained model without file extension [str]
         """
         assert type(num_features) is int and num_features > 0
         assert type(num_actions) is int and num_actions > 0
@@ -74,14 +79,20 @@ class QLearningModel:
 
         self.num_features = num_features
         self.num_actions = num_actions
-        self.path = path
+        self.path = path + ".npy"
+
+        dir = os.path.dirname(path)
+        file = os.path.basename(path)
+        date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.backup_path = os.path.join(dir, "model_backup", file + "_" + date_time + ".npy")
+
         self.training_mode = False
 
         if exists(path):
             file = open(path, 'rb')
             self.beta = np.load(file)
             config = np.load(file)
-            file.close
+            file.close()
 
             assert config[0] == num_features
             assert config[1] == num_actions
@@ -152,7 +163,12 @@ class QLearningModel:
         file = open(self.path, 'wb')
         np.save(file, self.beta)
         np.save(file, config)
-        file.close
+        file.close()
+
+        file = open(self.backup_path, 'wb')
+        np.save(file, self.beta)
+        np.save(file, config)
+        file.close()
 
 
     def bufferAddTransition(self, transition):
@@ -244,7 +260,6 @@ class QLearningModel:
         Y = reward + ((self.gamma**n) * maxQ)
         for i in range(self.num_actions):
             self.beta[i] = self.beta[i] + (self.alpha / self.buffer_size) * np.sum((X[i].T * (Y[i] - np.matmul(X[i] * self.beta[i]))).T)
-
 
 
     def Q(self, X, a):

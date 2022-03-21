@@ -1,13 +1,13 @@
 import os
-import pickle
 import random
 import numpy as np
 from igraph import * 
-from qlearning import *
-from datetime import date
+from agent_code.ml_agent_1.qlearning import *
+
+EPSILON = 0.1
 
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
-
+NUM_FEATURES = 34
 
 def setup(self):
     """
@@ -20,10 +20,8 @@ def setup(self):
 
     :param self: This object is passed to all callbacks and you can set arbitrary values.
     """
-
-    path = "agent_code/ml_agent_1/"+str(date.today())+".npy" 
-    self.model = QLearningModel(self, num_features, 6,path)
-
+    self.epsilon = EPSILON
+    self.model = QLearningModel(NUM_FEATURES, len(ACTIONS))
 
 
 def act(self, game_state: dict) -> str:
@@ -44,9 +42,8 @@ def act(self, game_state: dict) -> str:
     return ACTIONS[action]
     """
 
-    # eps-greedy policy:
-    eps = .1
-    if self.train and random.random() < eps:
+    # epsilon-greedy policy:
+    if self.train and random.random() < self.epsilon:
         self.logger.debug("Choosing action purely at random.")
         # 80%: walk in any direction. 10% wait. 10% bomb.
         action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])
@@ -72,8 +69,7 @@ def state_to_features(game_state: dict) -> np.array:
     :return: np.array
     """
 
-    features = {
-    }
+    features = {}
 
     field = game_state['field']
     bombs = game_state['bombs']
@@ -151,25 +147,32 @@ def state_to_features(game_state: dict) -> np.array:
     features['blastables'] = find_blastables(ownmap, blastablesmap, notwallsmap, crossmatrix)
 
     # calculate distance to the closest coin using graph algorithms
-    cols = field.shape[0] # x
-    rows = field.shape[1] # y
-    coins_np = np.array(coins)
-    coins_flat = coins_np[:,0] * cols + coins_np[:,1]
+    if len(coins) > 0:
+        cols = field.shape[0] # x
+        rows = field.shape[1] # y
+        coins_np = np.array(coins)
+        coins_flat = coins_np[:,0] * cols + coins_np[:,1]
 
-    g = Graph()
-    g.add_vertices(cols*rows)
+        g = Graph()
+        g.add_vertices(cols*rows)
 
-    for x in range(1, cols-2):
-        for y in range(1, rows-2):
-            if field[x,y] == 0:
-                if field[x+1,y] == 0:
-                    g.add_edges([(x*cols+y, (x+1)*cols+y)])
-                if field[x,y+1] == 0:
-                    g.add_edges([(x*cols+y, x*cols+y+1)])
+        for x in range(1, cols-2):
+            for y in range(1, rows-2):
+                if field[x,y] == 0:
+                    if field[x+1,y] == 0:
+                        g.add_edges([(x*cols+y, (x+1)*cols+y)])
+                    if field[x,y+1] == 0:
+                        g.add_edges([(x*cols+y, x*cols+y+1)])
 
-    coin_distances = g.shortest_paths(source=ownposx*cols+ownposy, target=coins_flat)
-    features['closest_coin_distance'] = np.min(coin_distances[0])
-    features['closest_3_coins_distance'] = np.sum(np.partition(coin_distances[0], 3)[0:3])
+        coin_distances = g.shortest_paths(source=ownposx*cols+ownposy, target=coins_flat)
+        features['closest_coin_distance'] = np.min(coin_distances[0])
+        max3 = min(3, len(coin_distances[0]))
+        features['closest_3_coins_distance'] = np.sum(np.partition(coin_distances[0], max3-1)[0:max3])
+
+        if features['closest_coin_distance'] == float("inf"):
+            features['closest_coin_distance'] = 1000
+        if features['closest_3_coins_distance'] == float("inf"):
+            features['closest_3_coins_distance'] = 1000
 
     # check which directions are free to move
     features['up_free'] = 0
