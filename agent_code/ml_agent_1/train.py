@@ -1,15 +1,13 @@
-from collections import namedtuple, deque
-import pickle
 from typing import List
 import events as e
 from .callbacks import state_to_features
 from agent_code.ml_agent_1.qlearning import *
 
 # Hyper parameters 
-ALPHA =         1     # neither reward nor transition function change over time
+ALPHA =         0.05
 GAMMA =         0.9
 BUFFER_SIZE =   100
-BATCH_SIZE =    40
+BATCH_SIZE =    20
 # epsilon is found in callbacks.py
 
 # Events
@@ -80,9 +78,6 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
 
     :param self: The same object that is passed to all of your callbacks.
     """
-    self.logger.debug(f'Encountered event(s) {", ".join(map(repr, events))} in final step')
-    self.transitions.append(Transition(state_to_features(last_game_state), last_action, None, reward_from_events(self, events)))
-
     # Store the model
     self.model.saveModel()
 

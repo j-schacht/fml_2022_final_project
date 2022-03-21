@@ -1,10 +1,9 @@
-import os
 import random
 import numpy as np
 from igraph import * 
 from agent_code.ml_agent_1.qlearning import *
 
-EPSILON = 0.1
+EPSILON = 0.2
 
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
 NUM_FEATURES = 34
@@ -48,8 +47,8 @@ def act(self, game_state: dict) -> str:
         # 80%: walk in any direction. 10% wait. 10% bomb.
         action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])
     else:
-        action = ACTIONS[self.model.predictAction(self, state_to_features(game_state))]
         self.logger.debug("Querying model for action.")
+        action = ACTIONS[self.model.predictAction(state_to_features(game_state))]
 
     return action
 
@@ -173,6 +172,9 @@ def state_to_features(game_state: dict) -> np.array:
 
         features['closest_coin_distance'] = [closest_coin_distance]
         features['closest_3_coins_distance'] = [closest_3_coins_distance]
+    else: 
+        features['closest_coin_distance'] = [1000]
+        features['closest_3_coins_distance'] = [1000]
 
     # check which directions are free to move
     features['up_free'] = [0]
