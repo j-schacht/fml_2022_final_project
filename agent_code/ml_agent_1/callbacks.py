@@ -145,7 +145,7 @@ def state_to_features(game_state: dict) -> np.array:
     features['freecorners'] = find_corners(ownposmap, freefield, crossmatrix)
 
     # number of objects that can be destroyed in each direction
-    features['blastables'] = find_blastables(ownmap, blastablesmap, notwallsmap, crossmatrix)
+    features['blastables'] = find_blastables(ownposmap, blastablesmap, notwallsmap, crossmatrix)
 
     # calculate distance to the closest coin using graph algorithms
     coins_np = np.array(coins)
@@ -236,14 +236,14 @@ def find_corners(ownmap, freemap, crossmatrix):
             cornermap = np.matmul(uppermatrix,cornermap)*freemap
             numberofcorners += np.sum(np.matmul(cornermap,crossmatrix)*freemap)
         freecorners.append(numberofcorners)
-        ownposmap = np.rot90(ownposmap)
+        ownmap = np.rot90(ownmap)
         freemap = np.rot90(freemap)
     return freecorners
 
 def find_blastables(ownmap, blastablesmap, notwallsmap, crossmatrix):
     uppermatrix = np.array([[
-        1 if i-j ==1 else 0 for i in range(freemap.shape[0])
-        ] for j in range(freemap.shape[1])])
+        1 if i-j ==1 else 0 for i in range(ownmap.shape[0])
+        ] for j in range(ownmap.shape[1])])
 
     blastables = []
     for i in range(4):
@@ -253,7 +253,7 @@ def find_blastables(ownmap, blastablesmap, notwallsmap, crossmatrix):
             blastmap = np.matmul(uppermatrix,blastmap)*notwallsmap
             numberofblastables += np.sum(blastmap*notwallsmap)
         blastables.append(numberofcorners)
-        ownposmap = np.rot90(ownposmap)
+        ownmap = np.rot90(ownmap)
         notwallsmap = np.rot90(notwallsmap)
         blastablesmap = np.rot90(blastablesmap)
     return blastables
