@@ -1,5 +1,3 @@
-from collections import namedtuple, deque
-import pickle
 from typing import List
 import events as e
 from .callbacks import state_to_features

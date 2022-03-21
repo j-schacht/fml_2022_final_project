@@ -1,4 +1,3 @@
-import os
 import random
 import numpy as np
 from igraph import * 
@@ -173,6 +172,9 @@ def state_to_features(game_state: dict) -> np.array:
 
         features['closest_coin_distance'] = [closest_coin_distance]
         features['closest_3_coins_distance'] = [closest_3_coins_distance]
+    else: 
+        features['closest_coin_distance'] = [1000]
+        features['closest_3_coins_distance'] = [1000]
 
     # check which directions are free to move
     features['up_free'] = [0]
