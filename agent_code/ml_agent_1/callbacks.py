@@ -214,7 +214,7 @@ def densitymap(objectmap, freemap, crossmatrix, weight = 1, exponent = 1, iterat
         densmap = (densmap*freemap)**exponent
         #densmap = densmap/(sum(sum(densmap)))
     densmap = densmap+objectmap
-    #densmap = densmap/(sum(sum(densmap)))
+    densmap = densmap/(np.max(densmap)+1)
     return densmap
 
 def neighborvalues(position, valuefield):
@@ -237,7 +237,7 @@ def find_corners(ownmap, freemap, crossmatrix):
         for j in range(3):
             cornermap = np.matmul(uppermatrix,cornermap)*freemap
             numberofcorners += np.sum(np.matmul(cornermap,crossmatrix)*freemap)
-        freecorners.append(numberofcorners)
+        freecorners.append(numberofcorners/4)
         ownmap = np.rot90(ownmap)
         freemap = np.rot90(freemap)
     return freecorners
@@ -254,7 +254,7 @@ def find_blastables(ownmap, blastablesmap, notwallsmap, crossmatrix):
         for j in range(3):
             blastmap = np.matmul(uppermatrix,blastmap)*notwallsmap
             numberofblastables += np.sum(blastmap*notwallsmap)
-        blastables.append(numberofblastables)
+        blastables.append(numberofblastables/3)
         ownmap = np.rot90(ownmap)
         notwallsmap = np.rot90(notwallsmap)
         blastablesmap = np.rot90(blastablesmap)
