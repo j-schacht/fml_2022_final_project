@@ -281,28 +281,29 @@ class QLearningModel:
         #print(X[0])
 
 
-    def nstep_gradientUpdate(self,n):
-
+    def nstep_gradientUpdate(self):
+        '''
+        This function performs the gradient step of the Q-function in n-step TD Q-learning.
+        '''
         assert self.training_mode == True
-        assert n < self.buffer_size
+        assert type(self.buffer_size) is int
 
-        # how to access the namedtuple? or is it a numpy.array? !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         X = self.buffer_X                      # dim: (buffer_size x num_features)
-        nextX = self.buffer_nextX              # dim: (buffer_size x num_features)
+        nextX = self.buffer_nextX             # dim: (buffer_size x num_features)
         reward = self.buffer_reward            # dim: (buffer_size x 1)
 
-        # find maximum value of Q for nextX and any possible action 
-        maxQ = np.max(np.matmul(nextX, self.beta.T), axis=2)
+        # calculate current guess of Q-function: maxQ !!!!!!!!!!!!!!!!!!!!!!!
+        maxQ = ... #np.max(np.matmul(nextX, self.beta.T), axis=2)
 
-        # calculate Y and insert into reward array
-        for i in range(self.buffer_size - n): # I think this is expensive as long as not vectorized ...to be continued
-            reward[i+n] = reward[i-1:i-1+n].sum() 
-
-        # calculate expected response Y
-        Y = reward + ((self.gamma**n) * maxQ)
-        for i in range(self.num_actions):
-            self.beta[i] = self.beta[i] + (self.alpha / self.buffer_size) * np.sum((X[i].T * (Y[i] - np.matmul(X[i] * self.beta[i]))).T)
-
+        # calculate response Y 
+        # the reward array will be used to store the response Y
+        for i in range(self.buffer_size): # I think this is expensive as long as not vectorized ...to be continued
+            reward[i] = np.dot(np.array(reward[i+1:i+1+self.buffer_size])[None,...],np.array([self.gamma**i for i in range(self.buffer_size)])[...,None]) + gamma**self.buffer_size*maxQ[i+self.buffer_size]
+        Y = reward
+        
+        #calculate betas:
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
 
     def Q(self, X, a):
         """
