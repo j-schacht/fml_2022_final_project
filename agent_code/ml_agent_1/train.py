@@ -28,6 +28,7 @@ def setup_training(self):
     self.buffer_size = BUFFER_SIZE
     self.batch_size = BATCH_SIZE
 
+    self.n = 3
     self.counter = 0
     self.counter_nstep = 0
 
@@ -79,7 +80,7 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
 
     # the following if-else statement replaces the above statement in the case of n_step TD Q-learning
     '''
-    if self.counter_nstep % BUFFER_SIZE = 1 and self.counter>= BUFFER_SIZE:
+    if self.counter_nstep % self.n = 1 and self.counter>= BUFFER_SIZE:
         self.model.nstep_gradientUpdate()
         self.counter = self.counter + 1
         self.counter_nstep = 0
