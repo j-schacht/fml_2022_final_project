@@ -301,7 +301,16 @@ class QLearningModel:
             reward[i] = np.dot(np.array(reward[i+1:i+1+self.n])[None,...],np.array([self.gamma**i for i in range(self.n)])[...,None]) + gamma**self.n*maxQ[i+self.n]
         Y = reward
         
-        #calculate betas:
+        # generate a batch (= random subset of the experience buffer) for each beta-vector
+        selection = np.zeros((self.num_actions, self.batch_size), dtype=int)
+        for i in range(self.num_actions):
+            selection[i] = np.random.choice(self.buffer_size, size=self.batch_size, replace=False)
+
+        X = self.buffer_X[selection]             
+        nextX = self.buffer_nextX[selection]     
+        reward = Y[selection]
+
+        #calculate new betas as in gradientUpdate:
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
 
