@@ -80,10 +80,10 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
 
     # the following if-else statement replaces the above statement in the case of n_step TD Q-learning
     '''
-    if self.counter_nstep % self.n = 1 and self.counter>= BUFFER_SIZE:
+    if self.counter_nstep % self.n = 1 and self.counter>= BUFFER_SIZE and BUFFER_SIZE <= self.counter_nstep:
         self.model.nstep_gradientUpdate()
         self.counter = self.counter + 1
-        self.counter_nstep = 0
+        self.counter_nstep = self.counter_nstep + 1
     else:
         self.counter = self.counter + 1
         self.counter_nstep = self.counter_nstep + 1
@@ -108,7 +108,11 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     self.model.saveModel()
     self.counter_nstep = 0
 
-    # for n-step TD Q-learning update
+    # activate the next lines in case of n-step Q-learning, such that no information gets lost
+    '''
+    if self.counter >= BUFFER_SIZE:
+        self.model.gradientUpdate()
+    '''
 
 
 def reward_from_events(self, events: List[str]) -> int:
