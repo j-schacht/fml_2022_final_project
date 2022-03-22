@@ -112,30 +112,20 @@ def state_to_features(game_state: dict) -> np.array:
         1 if abs(i-j)==1 else 0 for i in range(cols)
         ] for j in range(rows)])
 
-
     freedommap = densitymap(freefield, freefield, crossmatrix, weight = 0.1, exponent = 1, iterations = 10)
     features['freedomdensity'] = neighborvalues(ownpos, freedommap)
 
-    if len(coins) != 0:
-        coindensmap = densitymap(coinmap, freefield, crossmatrix, weight = 0.05, exponent = 1, iterations = 15)
-        features['coindensity'] = neighborvalues(ownpos, coindensmap)
-        features['coindensity'].pop(4) # the own position does not contain coins
-    else:
-        features['coindensity'] = [0]*4
+    coindensmap = densitymap(coinmap, freefield, crossmatrix, weight = 0.1, exponent = 1, iterations = 15)
+    features['coindensity'] = neighborvalues(ownpos, coindensmap)
+    features['coindensity'].pop(4) # the own position does not contain coins
 
-    if len(bombs) != 0:
-        bombdensmap = densitymap(bombsmap, notwallsmap, crossmatrix, weight = 0.5, exponent = 1, iterations = 5)
-        bombdensmap = -bombdensmap + freefield
-        features['bombdensity'] = neighborvalues(ownpos, bombdensmap)
-    else:
-        features['bombdensity'] = [0]*5
+    bombdensmap = densitymap(bombsmap, notwallsmap, crossmatrix, weight = 0.5, exponent = 1, iterations = 5)
+    bombdensmap = -bombdensmap + (freefield-1)*np.sum(bombdensmap)
+    features['bombdensity'] = neighborvalues(ownpos, bombdensmap)
 
-    if sum(sum(explosionmap)) != 0:
-        explosiondensmap = densitymap(explosionmap, freefield, crossmatrix, weight = 0.5, exponent = 1, iterations = 1)
-        explosiondensmap = -explosiondensmap + freefield
-        features['explosiondensity'] = neighborvalues(ownpos, explosiondensmap)
-    else:
-        features['explosiondensity'] = [0]*5
+    explosiondensmap = densitymap(explosionmap, freefield, crossmatrix, weight = 0.2, exponent = 1, iterations = 1)
+    explosiondensmap = -explosiondensmap + (freefield-1)*np.sum(explosiondensmap)
+    features['explosiondensity'] = neighborvalues(ownpos, explosiondensmap)
 
     # number of free corners in each direction
     features['freecorners'] = find_corners(ownposmap, freefield, crossmatrix)
