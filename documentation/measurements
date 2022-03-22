@@ -1,0 +1,8 @@
+iterations:                 2000
+epsilon:                    0.2 (no random bombs)
+
+alpha:                      1e-3, 5e-4, 1e-4, 5e-5                          (default: 1e-4)         Rudolf
+gamma:                      0.9, 0.8, 0.7, 0.6                              (default: 0.8)          Maria
+batch size, buffer size:    (25, 50), (50, 100), (250, 500), (500,1000)     (default: (50, 100))    Jannik
+
+python main.py play --agents ml_agent_1_m? --scenario coin-heaven --train 1 --n-rounds 2000 --no-gui

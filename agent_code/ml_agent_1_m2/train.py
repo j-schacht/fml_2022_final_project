@@ -9,7 +9,7 @@ from datetime import datetime
 ALPHA =         0.0001
 GAMMA =         0.8
 BUFFER_SIZE =   100
-BATCH_SIZE =    20
+BATCH_SIZE =    50
 # epsilon is found in callbacks.py
 
 # Events
