@@ -8,8 +8,8 @@ from datetime import datetime
 # Hyper parameters 
 ALPHA =         0.0001
 GAMMA =         0.7
-BUFFER_SIZE =   100
-BATCH_SIZE =    50
+BUFFER_SIZE =   50
+BATCH_SIZE =    25
 # epsilon is found in callbacks.py
 
 # Events
