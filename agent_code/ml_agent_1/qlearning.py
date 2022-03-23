@@ -98,7 +98,7 @@ class QLearningModel:
             self.beta = np.random.uniform(low=0.0, high=1.0, size=(num_actions, num_features))
 
 
-    def setupTraining(self, alpha, gamma, buffer_size, batch_size, initial_beta = None, autosave=False):
+    def setupTraining(self, alpha, gamma, buffer_size, batch_size, n=0, initial_beta = None, autosave=False):
         """
         This function sets up everything needed to train the model. It needs to be called only
         if the model is to be trained.
@@ -122,6 +122,7 @@ class QLearningModel:
         self.gamma = gamma
         self.buffer_size = buffer_size
         self.batch_size = batch_size
+        self.n = n
 
         # one buffer for each attribute of Transition type
         self.buffer_X = np.zeros((buffer_size, self.num_features))
@@ -289,6 +290,7 @@ class QLearningModel:
         assert self.training_mode == True
         assert type(self.buffer_size) is int
         assert type(self.n) is int
+        assert self.n > 0
 
         X = self.buffer_nextX                   # dim: (buffer_size x num_features)
         nextX = self.buffer_nextX               # dim: (buffer_size x num_features)

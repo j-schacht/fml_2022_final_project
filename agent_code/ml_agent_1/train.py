@@ -33,7 +33,7 @@ def setup_training(self):
     self.counter = 0
     self.counter_nstep = 0
 
-    self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE)
+    self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE, n=self.n)
 
     # file name for measurements
     date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
