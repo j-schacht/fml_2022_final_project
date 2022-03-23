@@ -124,7 +124,7 @@ def state_to_features(game_state: dict) -> np.array:
     explosiondensmap = densitymap(explosionmap, freefield, crossmatrix, weight = 0.2, exponent = 1, iterations = 1)
     explosiondensmap = -explosiondensmap + (freefield-1)*np.sum(explosiondensmap)
     features['explosiondensity'] = neighborvalues(ownpos, explosiondensmap)
-
+    
     # number of free corners in each direction
     features['freecorners'] = find_corners(ownposmap, freefield, crossmatrix)
 
@@ -164,7 +164,7 @@ def state_to_features(game_state: dict) -> np.array:
     else: 
         features['closest_coin_distance'] = [1000]
         features['closest_3_coins_distance'] = [1000]
-
+    
     # check which directions are free to move
     features['up_free'] = [0]
     features['down_free'] = [0]

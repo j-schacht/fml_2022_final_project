@@ -8,12 +8,12 @@ from datetime import datetime
 # --- HYPERPARAMETERS ---
 # epsilon is found in callbacks.py
 ALPHA =         0.0001
-GAMMA =         0.8
-BUFFER_SIZE =   100
-BATCH_SIZE =    50
+GAMMA =         0.6
+BUFFER_SIZE =   50
+BATCH_SIZE =    25
 
 # step size for n-step q-learning (set to zero to use normal q-learning)
-N =             3
+N =             20
 
 # Measurements
 MEASUREMENT =   True
