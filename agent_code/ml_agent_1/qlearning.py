@@ -1,7 +1,6 @@
 from collections import namedtuple
 import numpy as np
 from os.path import exists
-import threading
 import os.path
 from datetime import datetime
 
@@ -22,8 +21,13 @@ class QLearningModel:
         the number of possible actions.
 
     attribute: beta
-        matrix consisting of all beta-vectors (one vector per action).
+        matrix consisting of all beta-vectors (one vector per action). 
         vector length equals number of features.
+        initialized with normal distribution unless initial beta is given or existing model is loaded.
+
+    attribute: beta_new 
+        this is true if beta has been initialized with normal distribution, i.e. no initial beta
+        was given and no existing model has been loaded from file.
 
     attribute: alpha
         learning rate (hyperparameter)
@@ -31,6 +35,9 @@ class QLearningModel:
     attribute: gamma
         discount factor (impact of future reward).
         (hyperparameter)
+
+    attribute: n
+        parameter n for n-step q-learning (hyperparameter).
 
     attribute: buffer_size
         size of the experience buffer (= number of transitions to remember & consider).
@@ -41,20 +48,15 @@ class QLearningModel:
         this must be smaller than buffer_size.
         (hyperparameter)
 
-    attribute: buffer
-        this is the experience buffer storing transitions. size is given by buffer_size.
+    attribute: buffer_X, buffer_nextX, buffer_action, buffer_reward
+        these are the experience buffers storing the four attributes of transitions. 
+        size is given by buffer_size.
 
     attribute: path
         path to the file where the trained model is stored / is to be stored.
 
     attribute: backup_path
         path to the backup file where the trained model is stored / is to be stored. 
-
-    attribute: autosave
-        set this to true to automatically save the trained model once a minute.
-
-    attribute: autosave_timer
-        timer object used for autosave functionality
 
     attribute: training_mode
         if true, setupTraining() has been called and the model can be trained.
@@ -89,6 +91,7 @@ class QLearningModel:
             self.beta = np.load(file)
             config = np.load(file)
             file.close()
+            self.beta_new = False
 
             assert config[0] == num_features
             assert config[1] == num_actions
@@ -96,9 +99,10 @@ class QLearningModel:
 
         else: 
             self.beta = np.random.uniform(low=0.0, high=1.0, size=(num_actions, num_features))
+            self.beta_new = True
 
 
-    def setupTraining(self, alpha, gamma, buffer_size, batch_size, initial_beta = None, autosave=False):
+    def setupTraining(self, alpha, gamma, buffer_size, batch_size, n=0, initial_beta = None):
         """
         This function sets up everything needed to train the model. It needs to be called only
         if the model is to be trained.
@@ -108,20 +112,20 @@ class QLearningModel:
         :param gamma: discount factor [0.0 <= gamma <= 1.0] [float]
         :param buffer_size: size of the experience buffer [int]
         :param batch_size: size of random samples from experience buffer [0 < batch_size < buffer_size] [int]
+        :param n: parameter n for n-step q-learning (nstep_gradientUpdate() can only be called if this is set larger than zero).
         :param initial_beta: initial values for the beta vectors (default is uniform distribution) [np.ndarray]
-        :param autosave: if set to true, the model will be automatically saved once a minute
         """
         assert type(alpha) is float and alpha >= 0.0 and alpha <= 1.0
         assert type(gamma) is float and gamma >= 0.0 and gamma <= 1.0
         assert type(buffer_size) is int and buffer_size > batch_size
         assert type(batch_size) is int and batch_size > 0
-        assert type(autosave) is bool
         assert self.training_mode == False
 
         self.alpha = alpha
         self.gamma = gamma
         self.buffer_size = buffer_size
         self.batch_size = batch_size
+        self.n = n
 
         # one buffer for each attribute of Transition type
         self.buffer_X = np.zeros((buffer_size, self.num_features))
@@ -129,19 +133,13 @@ class QLearningModel:
         self.buffer_nextX = np.zeros((buffer_size, self.num_features))
         self.buffer_reward = np.zeros((buffer_size))
 
-        self.autosave = autosave
         self.training_mode = True
 
-        # TODO: beta is not initialized with 0
-        if initial_beta is not None and not self.beta.any():
+        if initial_beta is not None and self.beta_new:
             assert type(initial_beta) is np.ndarray
             assert initial_beta.shape == (self.num_actions, self.num_features)
             self.beta = initial_beta.copy()
-
-        self.autosave_timer = threading.Timer(60, self.saveModel())
-
-        if autosave:
-            self.autosave_timer.start()
+            self.beta_new = False
 
 
     def saveModel(self):
@@ -149,10 +147,6 @@ class QLearningModel:
         This function saves the current model to the file given by path attribute.
         """
         assert self.training_mode == True
-
-        # TODO
-        #if not self.autosave and self.autosave_timer.is_alive:
-        #    self.autosave_timer.cancel()
 
         # so far, we are only reading num_features and num_actions from the file. 
         # the other attributes are written to the file just in case we will need them at some point.
@@ -222,11 +216,6 @@ class QLearningModel:
         """
         assert self.training_mode == True
 
-        #print("Beta[0]:")
-        #print(self.beta[0])
-        #print("Beta[1]:")
-        #print(self.beta[1])
-
         # generate a batch (= random subset of the experience buffer) for each beta-vector
         selection = np.zeros((self.num_actions, self.batch_size), dtype=int)
         for i in range(self.num_actions):
@@ -243,23 +232,11 @@ class QLearningModel:
         #     = (num_actions x batch_size x 1) 
         maxQ = np.max(np.matmul(nextX, self.beta.T), axis=2)
 
-        #print("nextX:")
-        #print(nextX)
-        #print("self.beta")
-        #print(self.beta)
-        #print("nextX * beta^T:")
-        #print(np.matmul(nextX, self.beta.T))
-        #print("np.max(axis=2):")
-        #print(maxQ)
-
         # calculate expected response Y
         # # lecture reference: p. 160
         # dim:  (num_actions x batch_size x 1) + ((1x1) * (num_actions x batch_size x 1))
         #     = (num_actions x batch_size x 1)
         Y = reward + (self.gamma * maxQ)
-
-        #print("sum([0]):")
-        #print(np.sum((X[0].T * (Y[0] - np.matmul(X[0], self.beta[0]))).T, axis=0))
 
         # calculate the new beta-vectors (= gradient update)
         for i in range(self.num_actions):
@@ -271,16 +248,6 @@ class QLearningModel:
             #     = (num_features x 1)
             self.beta[i] = self.beta[i] + (self.alpha / self.batch_size) * np.sum((X[i].T * (Y[i] - np.matmul(X[i], self.beta[i]))).T, axis=0)
 
-        #if np.sum(self.beta) != 0:
-        #    self.beta = self.beta / np.sum(self.beta)
-
-        #print("maxQ:")
-        #print(maxQ)
-        #print("Y:")
-        #print(Y)
-        #print("X[0]:")
-        #print(X[0])
-
 
     def nstep_gradientUpdate(self):
         '''
@@ -288,18 +255,20 @@ class QLearningModel:
         '''
         assert self.training_mode == True
         assert type(self.buffer_size) is int
+        assert type(self.n) is int
+        assert self.n > 0
 
-        X = self.buffer_X                      # dim: (buffer_size x num_features)
-        nextX = self.buffer_nextX             # dim: (buffer_size x num_features)
-        reward = self.buffer_reward            # dim: (buffer_size x 1)
+        X = self.buffer_nextX                   # dim: (buffer_size x num_features)
+        nextX = self.buffer_nextX               # dim: (buffer_size x num_features)
+        reward = self.buffer_reward             # dim: (buffer_size x 1)
 
-        # calculate current guess of Q-function: maxQ !!!!!!!!!!!!!!!!!!!!!!!
-        maxQ = ... #np.max(np.matmul(nextX, self.beta.T), axis=2)
+        # calculate current guess of Q-function: 
+        maxQ = np.max(np.matmul(nextX, self.beta.T), axis=1)
 
         # calculate response Y 
         # the reward array will be used to store the response Y
         for i in range(self.buffer_size -self.n): # I think this is expensive as long as not vectorized ...to be continued
-            reward[i] = np.dot(np.array(reward[i+1:i+1+self.n])[None,...],np.array([self.gamma**i for i in range(self.n)])[...,None]) + gamma**self.n*maxQ[i+self.n]
+            reward[i] = np.dot(np.array(reward[i+1:i+1+self.n])[None,...],np.array([self.gamma**i for i in range(self.n)])[...,None]) + self.gamma**self.n*maxQ[i+self.n]
         Y = reward
         
         # generate a batch (= random subset of the experience buffer) for each beta-vector
@@ -312,8 +281,9 @@ class QLearningModel:
         reward = Y[selection]
 
         #calculate new betas as in gradientUpdate:
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        
+        for i in range(self.num_actions):
+            self.beta[i] = self.beta[i] + (self.alpha / self.batch_size) * np.sum((X[i].T * (Y[i] - np.matmul(X[i], self.beta[i]))).T, axis=0)
+      
 
     def Q(self, X, a):
         """
