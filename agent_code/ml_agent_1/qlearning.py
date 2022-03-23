@@ -3,6 +3,7 @@ import numpy as np
 from os.path import exists
 import os.path
 from datetime import datetime
+from numba import njit, prange
 
 Transition = namedtuple('Transition', ('X', 'action', 'nextX', 'reward'))
 
@@ -51,6 +52,9 @@ class QLearningModel:
     attribute: buffer_X, buffer_nextX, buffer_action, buffer_reward
         these are the experience buffers storing the four attributes of transitions. 
         size is given by buffer_size.
+
+    attribute: buffer_counter
+        this stores the number of elements present in the buffer
 
     attribute: path
         path to the file where the trained model is stored / is to be stored.
@@ -132,6 +136,7 @@ class QLearningModel:
         self.buffer_action = np.zeros((buffer_size))
         self.buffer_nextX = np.zeros((buffer_size, self.num_features))
         self.buffer_reward = np.zeros((buffer_size))
+        self.buffer_counter = 0
 
         self.training_mode = True
 
@@ -146,7 +151,7 @@ class QLearningModel:
         """
         This function saves the current model to the file given by path attribute.
         """
-        assert self.training_mode == True
+        #assert self.training_mode == True
 
         # so far, we are only reading num_features and num_actions from the file. 
         # the other attributes are written to the file just in case we will need them at some point.
@@ -180,12 +185,12 @@ class QLearningModel:
             nextX: 1D feature vector of state t+1 [np.ndarray]
             reward: absolute reward gotten after the transition [int]
         """
-        assert self.training_mode == True
-        assert type(transition) is Transition
-        assert type(transition.X) is np.ndarray and transition.X.shape == (self.num_features,)
-        assert type(transition.nextX) is np.ndarray and transition.nextX.shape == (self.num_features,)
-        assert type(transition.action) is int
-        assert type(transition.reward) is int
+        #assert self.training_mode == True
+        #assert type(transition) is Transition
+        #assert type(transition.X) is np.ndarray and transition.X.shape == (self.num_features,)
+        #assert type(transition.nextX) is np.ndarray and transition.nextX.shape == (self.num_features,)
+        #assert type(transition.action) is int
+        #assert type(transition.reward) is int
 
         self.buffer_X = np.roll(self.buffer_X, 1, axis=0)
         self.buffer_action = np.roll(self.buffer_action, 1, axis=0)
@@ -197,6 +202,9 @@ class QLearningModel:
         self.buffer_nextX[0] = transition.nextX
         self.buffer_reward[0] = transition.reward
 
+        if self.buffer_counter < self.buffer_size:
+            self.buffer_counter = self.buffer_counter + 1
+
 
     def bufferClear(self):
         """
@@ -207,6 +215,7 @@ class QLearningModel:
         self.buffer_action = np.zeros(self.buffer_size)
         self.buffer_nextX = np.zeros((self.buffer_size, self.num_features))
         self.buffer_reward = np.zeros(self.buffer_size)
+        self.buffer_counter = 0
 
 
     def gradientUpdate(self):
@@ -214,12 +223,20 @@ class QLearningModel:
         Compute new gradients by considering the transitions from the experience buffer.
         Lecture reference: pp. 159-162
         """
-        assert self.training_mode == True
+        #assert self.training_mode == True
+
+        if self.buffer_counter < 1:
+            return
+
+        if self.batch_size > self.buffer_counter:
+            batch_size = self.buffer_counter
+        else:
+            batch_size = self.batch_size
 
         # generate a batch (= random subset of the experience buffer) for each beta-vector
-        selection = np.zeros((self.num_actions, self.batch_size), dtype=int)
+        selection = np.zeros((self.num_actions, batch_size), dtype=int)
         for i in range(self.num_actions):
-            selection[i] = np.random.choice(self.buffer_size, size=self.batch_size, replace=False)
+            selection[i] = np.random.choice(self.buffer_counter, size=batch_size, replace=False)
 
         X = self.buffer_X[selection]             # dim: (num_actions x batch_size x num_features)
         nextX = self.buffer_nextX[selection]     # dim: (num_actions x batch_size x num_features)
@@ -246,7 +263,7 @@ class QLearningModel:
             #     = (num_features x 1) + (1x1) * sum((batch_size x num_features), axis=0)
             #     = (num_features x 1) + (1x1) * (num_features x 1)
             #     = (num_features x 1)
-            self.beta[i] = self.beta[i] + (self.alpha / self.batch_size) * np.sum((X[i].T * (Y[i] - np.matmul(X[i], self.beta[i]))).T, axis=0)
+            self.beta[i] = self.beta[i] + (self.alpha / batch_size) * np.sum((X[i].T * (Y[i] - np.matmul(X[i], self.beta[i]))).T, axis=0)
 
 
     def nstep_gradientUpdate(self):
@@ -290,8 +307,8 @@ class QLearningModel:
         This is the action value function. It returns a value for a given combination of a 1D feature vector and 
         an action. It can be used to find the best action for the current game state.
         """
-        assert type(X) is np.ndarray and X.shape == (self.num_features,)
-        assert a < self.num_actions and a >= 0
+        #assert type(X) is np.ndarray and X.shape == (self.num_features,)
+        #assert a < self.num_actions and a >= 0
         return np.matmul(X, self.beta[a])
 
 
@@ -301,5 +318,5 @@ class QLearningModel:
         1D feature vector representing the game state.
         This function is basically just calculating the return of the Q-function for every possible action.
         """
-        assert type(X) is np.ndarray and X.shape == (self.num_features,)
+        #assert type(X) is np.ndarray and X.shape == (self.num_features,)
         return np.argmax(np.matmul(X, self.beta.T))

@@ -1,3 +1,4 @@
 library                 used in                                         install    
 
 igraph                  ml_agent_1 (feature computation)                pip install igraph
+numba                   (not yet)                                       pip install numba

@@ -3,7 +3,7 @@ import numpy as np
 from igraph import * 
 from .qlearning import *
 
-EPSILON = 0.2
+EPSILON_START = 1.0
 
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
 NUM_FEATURES = 4
@@ -25,7 +25,7 @@ def setup(self):
 
     :param self: This object is passed to all callbacks and you can set arbitrary values.
     """
-    self.epsilon = EPSILON
+    self.epsilon = EPSILON_START
     self.model = QLearningModel(NUM_FEATURES, len(ACTIONS))
 
 
@@ -65,7 +65,6 @@ def state_to_features(game_state: dict) -> np.array:
     :param game_state:  A dictionary describing the current game board.
     :return: np.array
     """
-
     features = {}
 
     field = game_state['field']

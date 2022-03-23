@@ -7,13 +7,15 @@ from datetime import datetime
 
 # --- HYPERPARAMETERS ---
 # epsilon is found in callbacks.py
-ALPHA =         0.0001
-GAMMA =         0.6
-BUFFER_SIZE =   50
-BATCH_SIZE =    25
+EPSILON_DECREASE =  0.999
+EPSILON_MIN =       0.1
+ALPHA =             0.0001
+GAMMA =             0.6
+BUFFER_SIZE =       50
+BATCH_SIZE =        25
 
 # step size for n-step q-learning (set to zero to use normal q-learning)
-N =             20
+N =                 0
 
 # Measurements
 MEASUREMENT =   True
@@ -41,8 +43,8 @@ def setup_training(self):
 
     self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE, n=self.n)
 
-    # file name for measurements
-    if MEASUREMENT:
+    # file name for measurements 
+    if MEASUREMENT: # TODO: epsilon decreasing!
         date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         self.measurement_file = f"measurement_{date_time}_{str(self.epsilon)}_{str(ALPHA)}_{str(GAMMA)}_{str(BATCH_SIZE)}_{str(BUFFER_SIZE)}.csv"
 
@@ -85,12 +87,7 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
 
     if self.n == 0:
         # normal q-learning
-        if self.counter >= BUFFER_SIZE:
-            self.model.gradientUpdate()
-            self.counter = self.counter + 1
-        else:
-            self.counter = self.counter + 1
-
+        self.model.gradientUpdate()
     else:
         # n-step q-learning
         if self.counter_nstep % self.n == 1 and self.counter >= BUFFER_SIZE and BUFFER_SIZE <= self.counter_nstep:
@@ -118,6 +115,10 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     # store the model
     self.model.saveModel()
 
+    # decrease epsilon
+    if self.epsilon * EPSILON_DECREASE >= EPSILON_MIN:
+        self.epsilon = self.epsilon * EPSILON_DECREASE
+
     # store measurement results
     if MEASUREMENT:
         file = open(self.measurement_file, 'a')
@@ -140,8 +141,8 @@ def reward_from_events(self, events: List[str]) -> int:
         e.MOVED_RIGHT: -1,
         e.MOVED_UP: -1,
         e.MOVED_DOWN: -1,
-        e.WAITED: -3,
-        e.INVALID_ACTION: -30,
+        e.WAITED: -10,
+        e.INVALID_ACTION: -10,
 
         e.BOMB_DROPPED: -50,
         e.BOMB_EXPLODED: 0,
