@@ -302,7 +302,7 @@ class QLearningModel:
         # calculate response Y 
         # the reward array will be used to store the response Y
         for i in range(self.buffer_size -self.n): # I think this is expensive as long as not vectorized ...to be continued
-            reward[i] = np.dot(np.array(reward[i+1:i+1+self.n])[None,...],np.array([ (self.gamma)**i for i in range(self.n)])[...,None]) + gamma**self.n*maxQ[i+self.n]
+            reward[i] = np.dot(np.array(reward[i+1:i+1+self.n])[None,...],np.array([self.gamma**i for i in range(self.n)])[...,None]) + self.gamma**self.n*maxQ[i+self.n]
         Y = reward
         
         # generate a batch (= random subset of the experience buffer) for each beta-vector
