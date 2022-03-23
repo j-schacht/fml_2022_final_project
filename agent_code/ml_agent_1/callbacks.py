@@ -3,7 +3,7 @@ import numpy as np
 from igraph import * 
 from .qlearning import *
 
-EPSILON_START = 0.5
+EPSILON_START = 0.1
 
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
 NUM_FEATURES = 4
