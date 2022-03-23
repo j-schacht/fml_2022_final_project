@@ -3,7 +3,7 @@ import numpy as np
 from igraph import * 
 from .qlearning import *
 
-EPSILON_START = 0.1
+EPSILON_START = 1.0
 
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
 NUM_FEATURES = 4
@@ -39,7 +39,7 @@ def act(self, game_state: dict) -> str:
     :return: The action to take as a string.
     """
     # epsilon-greedy policy:
-    if self.train and random.random() < 0.1:                                   #temp
+    if self.train and random.random() < self.epsilon:                                  
         self.logger.debug("Choosing action purely at random.")
         # 80%: walk in any direction. 10% wait. 10% bomb.
         #action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])
