@@ -297,7 +297,7 @@ class QLearningModel:
         reward = self.buffer_reward             # dim: (buffer_size x 1)
 
         # calculate current guess of Q-function: 
-        maxQ = np.max(np.matmul(nextX, self.beta.T), axis=2)
+        maxQ = np.max(np.matmul(nextX, self.beta.T), axis=1)
 
         # calculate response Y 
         # the reward array will be used to store the response Y
