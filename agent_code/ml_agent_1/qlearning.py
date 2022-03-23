@@ -288,13 +288,14 @@ class QLearningModel:
         '''
         assert self.training_mode == True
         assert type(self.buffer_size) is int
+        assert type(self.n) is int
 
-        X = self.buffer_X                      # dim: (buffer_size x num_features)
-        nextX = self.buffer_nextX             # dim: (buffer_size x num_features)
-        reward = self.buffer_reward            # dim: (buffer_size x 1)
+        X = self.buffer_nextX                   # dim: (buffer_size x num_features)
+        nextX = self.buffer_nextX               # dim: (buffer_size x num_features)
+        reward = self.buffer_reward             # dim: (buffer_size x 1)
 
-        # calculate current guess of Q-function: maxQ !!!!!!!!!!!!!!!!!!!!!!!
-        maxQ = ... #np.max(np.matmul(nextX, self.beta.T), axis=2)
+        # calculate current guess of Q-function: 
+        maxQ = np.max(np.matmul(nextX, self.beta.T), axis=2)
 
         # calculate response Y 
         # the reward array will be used to store the response Y
@@ -312,8 +313,9 @@ class QLearningModel:
         reward = Y[selection]
 
         #calculate new betas as in gradientUpdate:
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        
+        for i in range(self.num_actions):
+            self.beta[i] = self.beta[i] + (self.alpha / self.batch_size) * np.sum((X[i].T * (Y[i] - np.matmul(X[i], self.beta[i]))).T, axis=0)
+      
 
     def Q(self, X, a):
         """
