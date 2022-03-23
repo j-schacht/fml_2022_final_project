@@ -117,14 +117,14 @@ def state_to_features(game_state: dict) -> np.array:
     crossmatrix = np.array([[
         1 if abs(i-j)==1 else 0 for i in range(cols)
         ] for j in range(rows)])
-
-    freedommap = densitymap(freefield, freefield, crossmatrix, weight = 0.1, exponent = 1, iterations = 10)
-    features['freedomdensity'] = neighborvalues(ownpos, freedommap)
-
+    
+    #freedommap = densitymap(freefield, freefield, crossmatrix, weight = 0.1, exponent = 1, iterations = 10)
+    #features['freedomdensity'] = neighborvalues(ownpos, freedommap)
+    
     coindensmap = densitymap(coinmap, freefield, crossmatrix, weight = 0.1, exponent = 1, iterations = 15)
     features['coindensity'] = neighborvalues(ownpos, coindensmap)
     features['coindensity'].pop(4) # the own position does not contain coins
-
+    '''
     bombdensmap = densitymap(bombsmap, notwallsmap, crossmatrix, weight = 0.5, exponent = 1, iterations = 5)
     bombdensmap = -bombdensmap + (freefield-1)*np.sum(bombdensmap)
     features['bombdensity'] = neighborvalues(ownpos, bombdensmap)
@@ -132,7 +132,7 @@ def state_to_features(game_state: dict) -> np.array:
     explosiondensmap = densitymap(explosionmap, freefield, crossmatrix, weight = 0.2, exponent = 1, iterations = 1)
     explosiondensmap = -explosiondensmap + (freefield-1)*np.sum(explosiondensmap)
     features['explosiondensity'] = neighborvalues(ownpos, explosiondensmap)
-
+    
     # number of free corners in each direction
     features['freecorners'] = find_corners(ownposmap, freefield, crossmatrix)
 
@@ -172,7 +172,7 @@ def state_to_features(game_state: dict) -> np.array:
     else: 
         features['closest_coin_distance'] = [1000]
         features['closest_3_coins_distance'] = [1000]
-
+    
     # check which directions are free to move
     features['up_free'] = [0]
     features['down_free'] = [0]
@@ -190,7 +190,7 @@ def state_to_features(game_state: dict) -> np.array:
 
     if field[ownposx+1,ownposy] == 0:
         features['right_free'] = [1]
-
+    '''
     # freedomdensity:5
     # coindensity:4
     # bombdensity:5
