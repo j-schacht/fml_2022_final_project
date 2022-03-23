@@ -7,7 +7,7 @@ from datetime import datetime
 
 # --- HYPERPARAMETERS ---
 # epsilon is found in callbacks.py
-EPSILON_DECREASE =  0.999
+EPSILON_DECREASE =  0.99                                                            #temp
 EPSILON_MIN =       0.1
 ALPHA =             0.0001
 GAMMA =             0.6
