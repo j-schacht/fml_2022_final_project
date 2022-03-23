@@ -5,12 +5,18 @@ from .callbacks import ACTIONS
 from .qlearning import *
 from datetime import datetime
 
-# Hyper parameters 
+# --- HYPERPARAMETERS ---
+# epsilon is found in callbacks.py
 ALPHA =         0.0001
 GAMMA =         0.8
 BUFFER_SIZE =   100
 BATCH_SIZE =    50
-# epsilon is found in callbacks.py
+
+# step size for n-step q-learning (set to zero to use normal q-learning)
+N =             3
+
+# Measurements
+MEASUREMENT =   True
 
 # Events
 PLACEHOLDER_EVENT = "PLACEHOLDER"
@@ -29,15 +35,16 @@ def setup_training(self):
     self.buffer_size = BUFFER_SIZE
     self.batch_size = BATCH_SIZE
 
-    self.n = 3
+    self.n = N
     self.counter = 0
     self.counter_nstep = 0
 
     self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE, n=self.n)
 
     # file name for measurements
-    date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    self.measurement_file = f"measurement_{date_time}_{str(self.epsilon)}_{str(ALPHA)}_{str(GAMMA)}_{str(BATCH_SIZE)}_{str(BUFFER_SIZE)}.csv"
+    if MEASUREMENT:
+        date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.measurement_file = f"measurement_{date_time}_{str(self.epsilon)}_{str(ALPHA)}_{str(GAMMA)}_{str(BATCH_SIZE)}_{str(BUFFER_SIZE)}.csv"
 
     
 def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_state: dict, events: List[str]):
@@ -57,7 +64,7 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     :param new_game_state: The state the agent is in now.
     :param events: The events that occurred when going from  `old_game_state` to `new_game_state`
     """
-    if not old_game_state or not new_game_state:
+    if not old_game_state or not new_game_state:    #TODO
         return
 
     self.logger.debug(f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}')
@@ -73,25 +80,26 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
         state_to_features(new_game_state),
         reward_from_events(self, events)
     )
-    '''
+    
     self.model.bufferAddTransition(t)
 
-    if self.counter >= BUFFER_SIZE:
-        self.model.gradientUpdate()
-        self.counter = self.counter + 1
+    if self.n == 0:
+        # normal q-learning
+        if self.counter >= BUFFER_SIZE:
+            self.model.gradientUpdate()
+            self.counter = self.counter + 1
+        else:
+            self.counter = self.counter + 1
+
     else:
-        self.counter = self.counter + 1
-    '''
-    # the following if-else statement replaces the above statement in the case of n_step TD Q-learning
-    
-    if self.counter_nstep % self.n == 1 and self.counter>= BUFFER_SIZE and BUFFER_SIZE <= self.counter_nstep:
-        self.model.nstep_gradientUpdate()
-        self.counter = self.counter + 1
-        self.counter_nstep = self.counter_nstep + 1
-    else:
-        self.counter = self.counter + 1
-        self.counter_nstep = self.counter_nstep + 1
-    
+        # n-step q-learning
+        if self.counter_nstep % self.n == 1 and self.counter >= BUFFER_SIZE and BUFFER_SIZE <= self.counter_nstep:
+            self.model.nstep_gradientUpdate()
+            self.counter = self.counter + 1
+            self.counter_nstep = self.counter_nstep + 1
+        else:
+            self.counter = self.counter + 1
+            self.counter_nstep = self.counter_nstep + 1
     
 
 def end_of_round(self, last_game_state: dict, last_action: str, events: List[str]):
@@ -109,17 +117,19 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     """
     # store the model
     self.model.saveModel()
-    self.counter_nstep = 0
 
     # store measurement results
-    file = open(self.measurement_file, 'a')
-    file.write(f"{str(last_game_state['round'])},{str(last_game_state['self'][1])},{str(last_game_state['step'])}\n")
-    file.close()
+    if MEASUREMENT:
+        file = open(self.measurement_file, 'a')
+        file.write(f"{str(last_game_state['round'])},{str(last_game_state['self'][1])},{str(last_game_state['step'])}\n")
+        file.close()
 
-    # activate the next lines in case of n-step Q-learning, such that no information gets lost
-    
-    if self.counter >= BUFFER_SIZE:
-        self.model.gradientUpdate()
+    if self.n != 0:
+        # only if n-step q-learning
+        self.counter_nstep = 0
+        # make sure that no information gets lost
+        if self.counter >= BUFFER_SIZE:
+            self.model.gradientUpdate()
     
 
 
