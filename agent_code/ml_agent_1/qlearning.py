@@ -288,7 +288,7 @@ class QLearningModel:
         for i in range(self.buffer_size -self.n): # I think this is expensive as long as not vectorized ...to be continued
             Y[i] = np.dot(np.array(reward[i+1:i+1+self.n])[None,...],np.array([self.gamma**i for i in range(self.n)])[...,None]) + self.gamma**self.n*maxQ[i+self.n]
         for i in range(self.n):
-            Y[i+self.n] = reward[i+self.n] + (self.gamma * maxQ)
+            Y[i+self.n] = np.array(reward[i+self.n]) + (self.gamma * maxQ)
         print(Y)
         
         # generate a batch (= random subset of the experience buffer) for each beta-vector
