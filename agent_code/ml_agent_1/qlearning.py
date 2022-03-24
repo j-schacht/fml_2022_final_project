@@ -3,7 +3,7 @@ import numpy as np
 from os.path import exists
 import os.path
 from datetime import datetime
-from numba import njit, prange
+from numba import jit, njit, prange
 
 # TODO: accelerate with numba, add some logger outputs
 
@@ -232,7 +232,7 @@ class QLearningModel:
         Compute new gradients by considering the transitions from the experience buffer.
         Lecture reference: pp. 159-162
         """
-        assert self.training_mode == True
+        #assert self.training_mode == True
 
         if self.buffer_counter < 1:
             return
