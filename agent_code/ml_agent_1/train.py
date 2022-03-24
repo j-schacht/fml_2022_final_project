@@ -16,7 +16,7 @@ BUFFER_SIZE         = 50
 BATCH_SIZE          = 25    # TODO: remove ?
 
 # step size for n-step q-learning (set to zero to use normal q-learning)
-N                   = 20
+N                   = 0
 
 INITIAL_BETA = np.array([[1,-0.1,-0.1,-0.1],
                         [-0.1, 1,-0.1,-0.1],
@@ -102,11 +102,11 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
         events.append("MOVED_TO_COIN")
     if ACTIONS.index(self_action) == np.argmax(cratedensity) and np.argmax(cratedensity) != 0:
         events.append("MOVED_TO_CRATE")
-    #if ACTIONS.index(self_action) == np.argmax(bombdensity) and np.argmax(bombdensity) != 0:
+    #if ACTIONS.index(self_action) == np.argmax(bombdensity) and np.argmax(bombdensity) != 1:
     #    events.append("MOVED_FROM_BOMB")
-    #if ACTIONS.index(self_action) == np.argmax(explosiondensity) and np.argmax(explosiondensity) != 0:
+    #if ACTIONS.index(self_action) == np.argmax(explosiondensity) and np.argmax(explosiondensity) != 1:
     #    events.append("MOVED_FROM_EXPLOSION")
-    if ACTIONS.index(self_action) == np.argmax(coindensity) and np.argmax(coindensity) != 0:
+    if ACTIONS.index(self_action) == np.argmax(coindensity) and np.argmax(coindensity) != 2:
         events.append("MOVED_FROM_BOMBEXPL")
     
     # state_to_features is defined in callbacks.py
