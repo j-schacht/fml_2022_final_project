@@ -9,7 +9,7 @@ from datetime import datetime
 # epsilon is found in callbacks.py
 EPSILON_DECREASE =  0.999                                                           
 EPSILON_MIN =       0.1
-ALPHA =             0.0005                                              #temp
+ALPHA =             0.0001
 GAMMA =             0.6
 BUFFER_SIZE =       50
 BATCH_SIZE =        25
