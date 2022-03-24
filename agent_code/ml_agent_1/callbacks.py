@@ -9,7 +9,7 @@ from agent_code.coin_collector_agent.callbacks import act as coin_collector_act
 EPSILON_START = 1.0
 
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
-NUM_FEATURES = 4
+NUM_FEATURES = 14
 
 """
 TODO
