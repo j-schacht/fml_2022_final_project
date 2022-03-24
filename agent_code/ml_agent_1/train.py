@@ -5,24 +5,26 @@ from .callbacks import ACTIONS
 from .qlearning import *
 from datetime import datetime
 
+
 # --- HYPERPARAMETERS ---
-# epsilon is found in callbacks.py
-EPSILON_DECREASE =  0.999
-EPSILON_MIN =       0.1
-ALPHA =             0.0001
-GAMMA =             0.6
-BUFFER_SIZE =       50
-BATCH_SIZE =        25
+# EPSILON_START is found in callbacks.py
+EPSILON_DECREASE    = 0.999
+EPSILON_MIN         = 0.1
+ALPHA               = 0.0001
+GAMMA               = 0.6
+BUFFER_SIZE         = 50
+BATCH_SIZE          = 25
 
 # step size for n-step q-learning (set to zero to use normal q-learning)
-N =                 0
+N                   = 0
 
 # Measurements
 MEASUREMENT =   True
 
 # Events
-PLACEHOLDER_EVENT = "PLACEHOLDER"
-
+MOVED_TO_COIN = 'MOVED_TO_COIN'
+MOVED_FROM_BOMB = 'MOVED_FROM_BOMB'
+MOVED_FROM_EXPLOSION = 'MOVED_FROM_EXPLOSION'
 
 def setup_training(self):
     """
@@ -87,7 +89,7 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     #    events.append("MOVED_FROM_BOMB")
     #if ACTIONS.index(self_action) == np.argmax(explosiondensity) and np.argmax(explosiondensity) != 0:
     #    events.append("MOVED_FROM_EXPLOSION")
-
+    
     # state_to_features is defined in callbacks.py
     t = Transition(
         old_features,
@@ -162,17 +164,17 @@ def reward_from_events(self, events: List[str]) -> int:
 
         e.CRATE_DESTROYED: 5,
         e.COIN_FOUND: 0,
-        e.COIN_COLLECTED: 10,
+        e.COIN_COLLECTED: 20,
 
         e.KILLED_OPPONENT: 50,
         e.KILLED_SELF: -50,
         e.GOT_KILLED: -50,
         e.OPPONENT_ELIMINATED: 0,
         e.SURVIVED_ROUND: 30,
-        e.MOVED_TO_COIN: 5,
-        e.MOVED_FROM_BOMB: 3,
-        e.MOVED_FROM_EXPLOSION: 3,
-        #PLACEHOLDER_EVENT: -.1  
+        
+        MOVED_TO_COIN: 5,
+        MOVED_FROM_BOMB: 3,
+        MOVED_FROM_EXPLOSION: 3,
     }
 
     reward_sum = 0
