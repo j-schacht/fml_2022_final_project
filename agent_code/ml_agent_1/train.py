@@ -72,14 +72,14 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     self.logger.debug(f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}')
 
     # Idea: Add your own events to hand out rewards
-    new_features = state_to_features(new_game_state)
+    old_features = state_to_features(old_game_state)
     ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
     featurecounter = 0
-    coindensity = new_features[featurecounter:featurecounter+4]
+    coindensity = old_features[featurecounter:featurecounter+4]
     featurecounter += 4
-    #bombdensity = new_features[featurecounter:featurecounter+5]
+    #bombdensity = old_features[featurecounter:featurecounter+5]
     #featurecounter += 5
-    #explosiondensity = new_features[featurecounter:featurecounter+5]
+    #explosiondensity = old_features[featurecounter:featurecounter+5]
     #featurecounter += 5
     if ACTIONS.index(self_action) == np.argmax(coindensity):
         events.append("MOVED_TO_COIN")
@@ -90,9 +90,9 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
 
     # state_to_features is defined in callbacks.py
     t = Transition(
-        state_to_features(old_game_state),
+        old_features,
         ACTIONS.index(self_action),
-        new_features,
+        state_to_features(new_game_state),
         reward_from_events(self, events)
     )
     
