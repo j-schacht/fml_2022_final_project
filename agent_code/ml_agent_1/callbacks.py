@@ -135,6 +135,10 @@ def state_to_features(game_state: dict) -> np.array:
     # number of objects that can be destroyed in each direction
     features['blastables'] = find_blastables(ownposmap, blastablesmap, notwallsmap, crossmatrix)
 
+    # feature to determine wether a bomb should be dropped
+    freecorners = sum(features['freecorners'])
+    features['cornersandblast'] = [sum(features['blastables'])*freecorners/(freecorners+2)]
+
     # calculate distance to the closest coin using graph algorithms
     if len(coins) > 0:
         cols = field.shape[0] # x
@@ -216,8 +220,8 @@ def densitymap(objectmap, freemap, crossmatrix, weight = 1, exponent = 1, iterat
         densmap = np.matmul(densmap,crossmatrix)*weight+np.matmul(crossmatrix,densmap)*weight+densmap
         densmap = (densmap*freemap)**exponent
         #densmap = densmap/(sum(sum(densmap)))
-    densmap = densmap+objectmap
     densmap = densmap/(np.max(densmap)+1)
+    densmap = densmap+objectmap
     return densmap
 
 
