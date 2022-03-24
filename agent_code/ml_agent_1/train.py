@@ -18,6 +18,14 @@ BATCH_SIZE          = 25
 # step size for n-step q-learning (set to zero to use normal q-learning)
 N                   = 20
 
+INITIAL_BETA = np.array([[1,-0.1,-0.1,-0.1],
+                        [-0.1, 1,-0.1,-0.1],
+                        [-0.1,-0.1,1,-0.1],
+                        [-0.1,-0.1,-0.1,1],
+                        [-0.1,-0.1,-0.1,-0.1],
+                        [-0.5,-0.5,-0.5,-0.5],
+])
+
 # Measurements
 MEASUREMENT =   True
 
@@ -43,6 +51,7 @@ def setup_training(self):
     self.counter = 0
     self.counter_nstep = 0
 
+    #self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE, n=self.n, initial_beta=INITIAL_BETA)
     self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE, n=self.n)
 
     # file name for measurements 
@@ -83,11 +92,11 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     #featurecounter += 5
     #explosiondensity = old_features[featurecounter:featurecounter+5]
     #featurecounter += 5
-    if ACTIONS.index(self_action) == np.argmax(coindensity):
+    if ACTIONS.index(self_action) == np.argmax(coindensity) and np.argmax(coindensity) != 0:
         events.append("MOVED_TO_COIN")
-    #if ACTIONS.index(self_action) == np.argmax(bombdensity):
+    #if ACTIONS.index(self_action) == np.argmax(bombdensity) and np.argmax(bombdensity) != 0:
     #    events.append("MOVED_FROM_BOMB")
-    #if ACTIONS.index(self_action) == np.argmax(explosiondensity):
+    #if ACTIONS.index(self_action) == np.argmax(explosiondensity) and np.argmax(explosiondensity) != 0:
     #    events.append("MOVED_FROM_EXPLOSION")
     
     # state_to_features is defined in callbacks.py
@@ -156,8 +165,8 @@ def reward_from_events(self, events: List[str]) -> int:
         e.MOVED_RIGHT: -1,
         e.MOVED_UP: -1,
         e.MOVED_DOWN: -1,
-        e.WAITED: -12,
-        e.INVALID_ACTION: -10,
+        e.WAITED: -3,
+        e.INVALID_ACTION: -5,
 
         e.BOMB_DROPPED: -50,
         e.BOMB_EXPLODED: 0,
@@ -171,8 +180,8 @@ def reward_from_events(self, events: List[str]) -> int:
         e.GOT_KILLED: -50,
         e.OPPONENT_ELIMINATED: 0,
         e.SURVIVED_ROUND: 30,
-        
-        MOVED_TO_COIN: 5,
+
+        MOVED_TO_COIN: 1,
         MOVED_FROM_BOMB: 3,
         MOVED_FROM_EXPLOSION: 3,
     }
