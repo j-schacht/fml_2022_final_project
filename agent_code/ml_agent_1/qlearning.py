@@ -5,6 +5,8 @@ import os.path
 from datetime import datetime
 from numba import njit, prange
 
+# TODO: accelerate with numba, add some logger outputs
+
 Transition = namedtuple('Transition', ('X', 'action', 'nextX', 'reward'))
 
 class QLearningModel:
@@ -27,8 +29,9 @@ class QLearningModel:
         initialized with normal distribution unless initial beta is given or existing model is loaded.
 
     attribute: beta_new 
-        this is true if beta has been initialized with normal distribution, i.e. no initial beta
-        was given and no existing model has been loaded from file.
+        numpy array of booleans with dimension num_features. elements are true if beta has been initialized 
+        with normal distribution for the respective feature, i.e. no initial beta was given and no existing 
+        model has been loaded from file, or the loaded model did not contain the feature yet.
 
     attribute: alpha
         learning rate (hyperparameter)
@@ -95,15 +98,20 @@ class QLearningModel:
             self.beta = np.load(file)
             config = np.load(file)
             file.close()
-            self.beta_new = False
 
-            assert config[0] == num_features
-            assert config[1] == num_actions
-            assert self.beta.shape == (num_actions, num_features)
+            assert int(config[0]) <= num_features
+            assert int(config[1]) == num_actions
+            assert self.beta.shape == (int(config[1]), int(config[0]))
+
+            self.beta_new = np.zeros(int(config[0]), dtype=bool)
+
+            if int(config[0]) < num_features:
+                self.beta = np.append(self.beta, np.random.uniform(low=0.0, high=1.0, size=(num_actions, num_features-int(config[0]))), axis=1)
+                self.beta_new = np.append(self.beta_new, np.ones(num_features-int(config[0]), dtype=bool))
 
         else: 
             self.beta = np.random.uniform(low=0.0, high=1.0, size=(num_actions, num_features))
-            self.beta_new = True
+            self.beta_new = np.ones(num_features, dtype=bool)
 
 
     def setupTraining(self, alpha, gamma, buffer_size, batch_size, n=0, initial_beta=None):
@@ -140,11 +148,12 @@ class QLearningModel:
 
         self.training_mode = True
 
-        if initial_beta is not None and self.beta_new:
+        if initial_beta is not None:
             assert type(initial_beta) is np.ndarray
             assert initial_beta.shape == (self.num_actions, self.num_features)
-            self.beta = initial_beta.copy()
-            self.beta_new = False
+
+            self.beta[:,self.beta_new] = initial_beta[:,self.beta_new]
+            self.beta_new[:] = False
 
 
     def saveModel(self):

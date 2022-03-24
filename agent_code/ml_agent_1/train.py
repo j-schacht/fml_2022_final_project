@@ -13,7 +13,7 @@ EPSILON_MIN         = 0.1
 ALPHA               = 0.0001
 GAMMA               = 0.6
 BUFFER_SIZE         = 50
-BATCH_SIZE          = 25
+BATCH_SIZE          = 25    # TODO: remove ?
 
 # step size for n-step q-learning (set to zero to use normal q-learning)
 N                   = 0
@@ -31,6 +31,7 @@ MEASUREMENT =   True
 
 # Events
 MOVED_TO_COIN = 'MOVED_TO_COIN'
+MOVED_TO_CRATE = 'MOVED_TO_CRATE'
 MOVED_FROM_BOMB = 'MOVED_FROM_BOMB'
 MOVED_FROM_EXPLOSION = 'MOVED_FROM_EXPLOSION'
 
@@ -161,29 +162,30 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
 def reward_from_events(self, events: List[str]) -> int:
     
     game_rewards = {
-        e.MOVED_LEFT: -1,
-        e.MOVED_RIGHT: -1,
-        e.MOVED_UP: -1,
-        e.MOVED_DOWN: -1,
-        e.WAITED: -3,
-        e.INVALID_ACTION: -5,
+        e.MOVED_LEFT: -2,
+        e.MOVED_RIGHT: -2,
+        e.MOVED_UP: -2,
+        e.MOVED_DOWN: -2,
+        e.WAITED: -6,
+        e.INVALID_ACTION: -10,
 
-        e.BOMB_DROPPED: -50,
+        e.BOMB_DROPPED: -15,
         e.BOMB_EXPLODED: 0,
 
-        e.CRATE_DESTROYED: 5,
+        e.CRATE_DESTROYED: 10,
         e.COIN_FOUND: 0,
-        e.COIN_COLLECTED: 20,
+        e.COIN_COLLECTED: 40,
 
-        e.KILLED_OPPONENT: 50,
-        e.KILLED_SELF: -50,
-        e.GOT_KILLED: -50,
+        e.KILLED_OPPONENT: 100,
+        e.KILLED_SELF: -100,
+        e.GOT_KILLED: -100,
         e.OPPONENT_ELIMINATED: 0,
-        e.SURVIVED_ROUND: 30,
+        e.SURVIVED_ROUND: 60,
 
-        MOVED_TO_COIN: 1,
-        MOVED_FROM_BOMB: 3,
-        MOVED_FROM_EXPLOSION: 3,
+        MOVED_TO_COIN: 2,
+        MOVED_TO_CRATE: 1,
+        MOVED_FROM_BOMB: 4,
+        MOVED_FROM_EXPLOSION: 4,
     }
 
     reward_sum = 0

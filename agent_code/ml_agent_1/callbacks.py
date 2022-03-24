@@ -13,7 +13,6 @@ NUM_FEATURES = 4
 
 """
 TODO
-- change back epsilon-greedy policy
 - handle final game states?
 """
 
@@ -46,8 +45,8 @@ def act(self, game_state: dict) -> str:
     if self.train and random.random() < self.epsilon:                                  
         self.logger.debug("Choosing action purely at random.")
         # 80%: walk in any direction. 10% wait. 10% bomb.
-        #action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])
-        action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .2, 0])  # only temporary
+        action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])
+        #action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .2, 0])
         #action = coin_collector_act(self, game_state)
     else:
         self.logger.debug("Querying model for action.")
@@ -116,7 +115,7 @@ def state_to_features(game_state: dict) -> np.array:
     #freedommap = densitymap(freefield, freefield, crossmatrix, weight = 0.1, exponent = 1, iterations = 10)
     #features['freedomdensity'] = neighborvalues(ownpos, freedommap)
 
-    coindensmap = densitymap(coinmap, freefield, crossmatrix, weight = 0.2, exponent = 1, iterations = 12)
+    coindensmap = densitymap(coinmap, freefield, crossmatrix, weight = 0.2, exponent = 1, iterations = 7)
     features['coindensity'] = neighborvalues(ownpos, coindensmap)
     features['coindensity'].pop(4) # the own position does not contain coins
 
