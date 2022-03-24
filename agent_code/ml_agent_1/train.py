@@ -81,7 +81,7 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     #featurecounter += 5
     #explosiondensity = old_features[featurecounter:featurecounter+5]
     #featurecounter += 5
-    if ACTIONS.index(self_action) == np.argmax(coindensity):
+    if ACTIONS.index(self_action) == np.argmax(coindensity) and np.argmax(coindensity) != 0:
         events.append("MOVED_TO_COIN")
     #if ACTIONS.index(self_action) == np.argmax(bombdensity):
     #    events.append("MOVED_FROM_BOMB")
