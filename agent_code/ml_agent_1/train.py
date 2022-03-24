@@ -83,9 +83,9 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     #featurecounter += 5
     if ACTIONS.index(self_action) == np.argmax(coindensity) and np.argmax(coindensity) != 0:
         events.append("MOVED_TO_COIN")
-    #if ACTIONS.index(self_action) == np.argmax(bombdensity):
+    #if ACTIONS.index(self_action) == np.argmax(bombdensity) and np.argmax(bombdensity) != 0:
     #    events.append("MOVED_FROM_BOMB")
-    #if ACTIONS.index(self_action) == np.argmax(explosiondensity):
+    #if ACTIONS.index(self_action) == np.argmax(explosiondensity) and np.argmax(explosiondensity) != 0:
     #    events.append("MOVED_FROM_EXPLOSION")
 
     # state_to_features is defined in callbacks.py
