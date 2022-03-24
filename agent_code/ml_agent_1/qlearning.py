@@ -277,6 +277,7 @@ class QLearningModel:
         X = self.buffer_X                   # dim: (buffer_size x num_features)
         nextX = self.buffer_nextX               # dim: (buffer_size x num_features)
         reward = self.buffer_reward             # dim: (buffer_size x 1)
+        action = self.buffer_action
 
         # calculate current guess of Q-function: 
         maxQ = np.max(np.matmul(nextX, self.beta.T),axis=1)
@@ -290,26 +291,16 @@ class QLearningModel:
             Y[i+self.n] = np.array(reward)[i+self.n] + (self.gamma * maxQ[i+self.n])
         
         
-        # generate a batch (= random subset of the experience buffer) for each beta-vector
-        selection = np.zeros((self.num_actions, self.batch_size), dtype=int)
+        # generate the batch of actions for each beta-vector
+        sel = np.zeros((self.num_actions), dtype=np.ndarray)
         for i in range(self.num_actions):
-            selection[i] = np.random.choice(self.buffer_size, size=self.batch_size, replace=False)
+            sel[i] = np.where(action == i)[0]
 
-        X = self.buffer_X[selection]             
-        nextX = self.buffer_nextX[selection]     
-        reward = Y[selection]
-        '''
-        print("self.beta[0] is")
-        print(self.beta[0].shape)
-        print(self.beta[0])
-        print("self.beta[1] is")
-        print(self.beta[1].shape)
-        print(self.beta[1])
-        '''
-        #calculate new betas as in gradientUpdate:
+        # calculate the new beta-vectors as in gradientUpdate:
         for i in range(self.num_actions):
-            self.beta[i] = self.beta[i] + (self.alpha / self.batch_size) * np.sum((X[i].T * (Y[i] - np.matmul(X[i], self.beta[i]))).T, axis=0)
-      
+            if sel[i].size > 0:
+                self.beta[i] = self.beta[i] + (self.alpha / sel[i].size) * np.sum((X[sel[i]].T * (Y[sel[i]] - np.matmul(X[sel[i]], self.beta[i]))).T, axis=0)
+
 
     def Q(self, X, a):
         """

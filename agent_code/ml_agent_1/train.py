@@ -16,7 +16,7 @@ BUFFER_SIZE         = 50
 BATCH_SIZE          = 25
 
 # step size for n-step q-learning (set to zero to use normal q-learning)
-N                   = 0
+N                   = 20
 
 INITIAL_BETA = np.array([[1,-0.1,-0.1,-0.1],
                         [-0.1, 1,-0.1,-0.1],
