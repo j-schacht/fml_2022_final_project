@@ -18,6 +18,14 @@ BATCH_SIZE          = 25
 # step size for n-step q-learning (set to zero to use normal q-learning)
 N                   = 0
 
+INITIAL_BETA = np.array([[1,-0.1,-0.1,-0.1],
+                        [-0.1, 1,-0.1,-0.1],
+                        [-0.1,-0.1,1,-0.1],
+                        [-0.1,-0.1,-0.1,1],
+                        [-0.1,-0.1,-0.1,-0.1],
+                        [-0.5,-0.5,-0.5,-0.5],
+])
+
 # Measurements
 MEASUREMENT =   True
 
@@ -43,6 +51,7 @@ def setup_training(self):
     self.counter = 0
     self.counter_nstep = 0
 
+    #self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE, n=self.n, initial_beta=INITIAL_BETA)
     self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE, n=self.n)
 
     # file name for measurements 
@@ -156,8 +165,8 @@ def reward_from_events(self, events: List[str]) -> int:
         e.MOVED_RIGHT: -1,
         e.MOVED_UP: -1,
         e.MOVED_DOWN: -1,
-        e.WAITED: -12,
-        e.INVALID_ACTION: -10,
+        e.WAITED: -3,
+        e.INVALID_ACTION: -5,
 
         e.BOMB_DROPPED: -50,
         e.BOMB_EXPLODED: 0,
@@ -171,8 +180,8 @@ def reward_from_events(self, events: List[str]) -> int:
         e.GOT_KILLED: -50,
         e.OPPONENT_ELIMINATED: 0,
         e.SURVIVED_ROUND: 30,
-        
-        MOVED_TO_COIN: 5,
+
+        MOVED_TO_COIN: 1,
         MOVED_FROM_BOMB: 3,
         MOVED_FROM_EXPLOSION: 3,
     }

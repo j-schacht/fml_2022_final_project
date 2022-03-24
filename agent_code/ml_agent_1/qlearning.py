@@ -7,14 +7,6 @@ from numba import njit, prange
 
 Transition = namedtuple('Transition', ('X', 'action', 'nextX', 'reward'))
 
-INITIAL_BETA = np.array([[1,-0.1,-0.1,-0.1],
-                        [-0.1, 1,-0.1,-0.1],
-                        [-0.1,-0.1,1,-0.1],
-                        [-0.1,-0.1,-0.1,1],
-                        [-0.1,-0.1,-0.1,-0.1],
-                        [-0.5,-0.5,-0.5,-0.5],
-])
-
 class QLearningModel:
     """ 
     This class implements the Q-Learning model as a method for reinforcement learning,
@@ -114,7 +106,7 @@ class QLearningModel:
             self.beta_new = True
 
 
-    def setupTraining(self, alpha, gamma, buffer_size, batch_size, n=0, initial_beta = INITIAL_BETA):
+    def setupTraining(self, alpha, gamma, buffer_size, batch_size, n=0, initial_beta=None):
         """
         This function sets up everything needed to train the model. It needs to be called only
         if the model is to be trained.
@@ -270,7 +262,7 @@ class QLearningModel:
                 #     = (num_features x 1)
                 self.beta[i] = self.beta[i] + (self.alpha / sel[i].size) * np.sum((X[sel[i]].T * (Y[sel[i]] - np.matmul(X[sel[i]], self.beta[i]))).T, axis=0)
 
-        print(self.beta)
+        #print(self.beta)
 
 
     def nstep_gradientUpdate(self):

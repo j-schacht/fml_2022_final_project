@@ -116,7 +116,7 @@ def state_to_features(game_state: dict) -> np.array:
     #freedommap = densitymap(freefield, freefield, crossmatrix, weight = 0.1, exponent = 1, iterations = 10)
     #features['freedomdensity'] = neighborvalues(ownpos, freedommap)
 
-    coindensmap = densitymap(coinmap, freefield, crossmatrix, weight = 0.1, exponent = 1, iterations = 5)
+    coindensmap = densitymap(coinmap, freefield, crossmatrix, weight = 0.2, exponent = 1, iterations = 12)
     features['coindensity'] = neighborvalues(ownpos, coindensmap)
     features['coindensity'].pop(4) # the own position does not contain coins
 
