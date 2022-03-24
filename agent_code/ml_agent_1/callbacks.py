@@ -116,12 +116,15 @@ def state_to_features(game_state: dict) -> np.array:
     #freedommap = densitymap(freefield, freefield, crossmatrix, weight = 0.1, exponent = 1, iterations = 10)
     #features['freedomdensity'] = neighborvalues(ownpos, freedommap)
 
-    coindensmap = densitymap(coinmap, freefield, crossmatrix, weight = 0.2, exponent = 1, iterations = 12)
+    coindensmap = densitymap(coinmap, freefield, crossmatrix, weight = 0.2, exponent = 1, iterations = 7)
     features['coindensity'] = neighborvalues(ownpos, coindensmap)
     features['coindensity'].pop(4) # the own position does not contain coins
+    
+    cratedensmap = densitymap(cratesmap, notwallsmap, crossmatrix, weight = 0.2, exponent = 1, iterations = 5)
+    features['cratedensity'] = neighborvalues(ownpos, coindensmap)
+    features['cratedensity'].pop(4) # the own position does not contain crates
 
-    '''
-    bombdensmap = densitymap(bombsmap, notwallsmap, crossmatrix, weight = 0.5, exponent = 1, iterations = 5)
+    bombdensmap = densitymap(bombsmap, notwallsmap, crossmatrix, weight = 0.6, exponent = 1, iterations = 5)
     bombdensmap = -bombdensmap + (freefield-1)*np.sum(bombdensmap)
     features['bombdensity'] = neighborvalues(ownpos, bombdensmap)
 
@@ -129,6 +132,8 @@ def state_to_features(game_state: dict) -> np.array:
     explosiondensmap = -explosiondensmap + (freefield-1)*np.sum(explosiondensmap)
     features['explosiondensity'] = neighborvalues(ownpos, explosiondensmap)
     
+    features['bombexplcombined'] = neighborvalues(ownpos, bombdensmap+explosiondensmap)
+
     # number of free corners in each direction
     features['freecorners'] = find_corners(ownposmap, freefield, crossmatrix)
 
@@ -138,7 +143,7 @@ def state_to_features(game_state: dict) -> np.array:
     # feature to determine wether a bomb should be dropped
     freecorners = sum(features['freecorners'])
     features['cornersandblast'] = [sum(features['blastables'])*freecorners/(freecorners+2)]
-
+    '''
     # calculate distance to the closest coin using graph algorithms
     if len(coins) > 0:
         cols = field.shape[0] # x
@@ -193,14 +198,17 @@ def state_to_features(game_state: dict) -> np.array:
     '''
     # freedomdensity:5
     # coindensity:4
+    # cratedensity:4
     # bombdensity:5
     # explosiondensity:5
+    # bombexplcombined:1
     # freecorners:4
     # blastables:4
     # closest_coin_distance:1
     # closest_3_coins_distance:1
+    # cornersandblast:1
     #usedfeatures = ['freedomdensity','coindensity','bombdensity','explosiondensity','freecorners','blastables','closest_coin_distance','closest_3_coins_distance']
-    usedfeatures = ['coindensity']
+    usedfeatures = ['coindensity','cratedensity','bombexplcombined','cornersandblast']
     featurearray = features_dict_to_array(features, usedfeatures)
     return featurearray
 
