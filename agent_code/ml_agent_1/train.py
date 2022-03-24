@@ -88,16 +88,24 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     featurecounter = 0
     coindensity = old_features[featurecounter:featurecounter+4]
     featurecounter += 4
+    cratedensity = old_features[featurecounter:featurecounter+4]
+    featurecounter += 4
     #bombdensity = old_features[featurecounter:featurecounter+5]
     #featurecounter += 5
     #explosiondensity = old_features[featurecounter:featurecounter+5]
     #featurecounter += 5
+    bombexplcombined = old_features[featurecounter:featurecounter+5]
+    featurecounter += 5
     if ACTIONS.index(self_action) == np.argmax(coindensity) and np.argmax(coindensity) != 0:
         events.append("MOVED_TO_COIN")
+    if ACTIONS.index(self_action) == np.argmax(cratedensity) and np.argmax(cratedensity) != 0:
+        events.append("MOVED_TO_CRATE")
     #if ACTIONS.index(self_action) == np.argmax(bombdensity) and np.argmax(bombdensity) != 0:
     #    events.append("MOVED_FROM_BOMB")
     #if ACTIONS.index(self_action) == np.argmax(explosiondensity) and np.argmax(explosiondensity) != 0:
     #    events.append("MOVED_FROM_EXPLOSION")
+    if ACTIONS.index(self_action) == np.argmax(coindensity) and np.argmax(coindensity) != 0:
+        events.append("MOVED_FROM_BOMBEXPL")
     
     # state_to_features is defined in callbacks.py
     t = Transition(
@@ -184,6 +192,7 @@ def reward_from_events(self, events: List[str]) -> int:
         MOVED_TO_COIN: 1,
         MOVED_FROM_BOMB: 3,
         MOVED_FROM_EXPLOSION: 3,
+        MOVED_FROM_BOMBEXPL
     }
 
     reward_sum = 0
