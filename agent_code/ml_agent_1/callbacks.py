@@ -124,11 +124,11 @@ def state_to_features(game_state: dict) -> np.array:
     features['cratedensity'].pop(4) # the own position does not contain crates
 
     bombdensmap = densitymap(bombsmap, notwallsmap, crossmatrix, weight = 0.6, exponent = 1, iterations = 5)
-    bombdensmap = -bombdensmap + (freefield-1)*np.sum(bombdensmap)
+    bombdensmap = -bombdensmap + freefield
     features['bombdensity'] = neighborvalues(ownpos, bombdensmap)
 
     explosiondensmap = densitymap(explosionmap, freefield, crossmatrix, weight = 0.2, exponent = 1, iterations = 1)
-    explosiondensmap = -explosiondensmap + (freefield-1)*np.sum(explosiondensmap)
+    explosiondensmap = -explosiondensmap + freefield
     features['explosiondensity'] = neighborvalues(ownpos, explosiondensmap)
     
     features['bombexplcombined'] = neighborvalues(ownpos, bombdensmap+explosiondensmap)
