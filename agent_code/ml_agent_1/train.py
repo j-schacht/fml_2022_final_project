@@ -5,17 +5,18 @@ from .callbacks import ACTIONS
 from .qlearning import *
 from datetime import datetime
 
+
 # --- HYPERPARAMETERS ---
-# epsilon is found in callbacks.py
-EPSILON_DECREASE =  0.999
-EPSILON_MIN =       0.1
-ALPHA =             0.0001
-GAMMA =             0.6
-BUFFER_SIZE =       50
-BATCH_SIZE =        25
+# EPSILON_START is found in callbacks.py
+EPSILON_DECREASE    = 0.999
+EPSILON_MIN         = 0.1
+ALPHA               = 0.0001
+GAMMA               = 0.6
+BUFFER_SIZE         = 50
+BATCH_SIZE          = 25
 
 # step size for n-step q-learning (set to zero to use normal q-learning)
-N =                 0
+N                   = 0
 
 # Measurements
 MEASUREMENT =   True
@@ -75,6 +76,11 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     #if ...:
     #    events.append(PLACEHOLDER_EVENT)
 
+    feature = state_to_features(old_game_state) # urdl
+
+    if np.argmax(feature[0:4]) == ACTIONS.index(self_action):
+        events.append(PLACEHOLDER_EVENT)
+    
     # state_to_features is defined in callbacks.py
     t = Transition(
         state_to_features(old_game_state),
@@ -149,14 +155,15 @@ def reward_from_events(self, events: List[str]) -> int:
 
         e.CRATE_DESTROYED: 5,
         e.COIN_FOUND: 0,
-        e.COIN_COLLECTED: 10,
+        e.COIN_COLLECTED: 20,
 
         e.KILLED_OPPONENT: 50,
         e.KILLED_SELF: -50,
         e.GOT_KILLED: -50,
         e.OPPONENT_ELIMINATED: 0,
         e.SURVIVED_ROUND: 30,
-        #PLACEHOLDER_EVENT: -.1  
+        
+        PLACEHOLDER_EVENT: 10  
     }
 
     reward_sum = 0

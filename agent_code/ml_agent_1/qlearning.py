@@ -223,31 +223,22 @@ class QLearningModel:
         Compute new gradients by considering the transitions from the experience buffer.
         Lecture reference: pp. 159-162
         """
-        #assert self.training_mode == True
+        assert self.training_mode == True
 
         if self.buffer_counter < 1:
             return
 
-        if self.batch_size > self.buffer_counter:
-            batch_size = self.buffer_counter
-        else:
-            batch_size = self.batch_size
-
-        # generate a batch (= random subset of the experience buffer) for each beta-vector
-        selection = np.zeros((self.num_actions, batch_size), dtype=int)
-        for i in range(self.num_actions):
-            selection[i] = np.random.choice(self.buffer_counter, size=batch_size, replace=False)
-
-        X = self.buffer_X[selection]             # dim: (num_actions x batch_size x num_features)
-        nextX = self.buffer_nextX[selection]     # dim: (num_actions x batch_size x num_features)
-        reward = self.buffer_reward[selection]   # dim: (num_actions x batch_size x 1)
+        X = self.buffer_X                       # dim: (buffer_size x num_features)
+        nextX = self.buffer_nextX               # dim: (buffer_size x num_features)
+        reward = self.buffer_reward             # dim: (buffer_size x 1)
+        action = self.buffer_action
 
         # find maximum value of Q for nextX and any possible action
-        # lecture reference: p. 160
-        # dim:  max((num_actions x batch_size x num_features) * (num_actions x num_features)^T, axis=2)
-        #     = max((num_actions x batch_size x num_actions), axis=2)
-        #     = (num_actions x batch_size x 1) 
-        maxQ = np.max(np.matmul(nextX, self.beta.T), axis=2)
+        # lecture reference: p. 160 TODO
+        # dim:  max((num_actions x num_features) * (num_actions x num_features)^T, axis=2)
+        #     = max((num_actions x num_actions), axis=1)
+        #     = (num_actions x 1) 
+        maxQ = np.max(np.matmul(nextX, self.beta.T), axis=1)
 
         # calculate expected response Y
         # # lecture reference: p. 160
@@ -255,15 +246,23 @@ class QLearningModel:
         #     = (num_actions x batch_size x 1)
         Y = reward + (self.gamma * maxQ)
 
+        # generate a batch (= random subset of the experience buffer) for each beta-vector
+        sel = np.zeros((self.num_actions), dtype=np.ndarray)
+        for i in range(self.num_actions):
+            sel[i] = np.where(action == i)[0]
+
         # calculate the new beta-vectors (= gradient update)
         for i in range(self.num_actions):
-            # lecture reference: p. 162
-            # dim:  (num_features x 1) + (1x1) * sum(((batch_size x num_features)^T . ((batch_size x 1) - (batch_size x num_features) * (num_features x 1)))^T)
-            #     = (num_features x 1) + (1x1) * sum(((batch_size x num_features)^T .  (batch_size x 1))^T)
-            #     = (num_features x 1) + (1x1) * sum((batch_size x num_features), axis=0)
-            #     = (num_features x 1) + (1x1) * (num_features x 1)
-            #     = (num_features x 1)
-            self.beta[i] = self.beta[i] + (self.alpha / batch_size) * np.sum((X[i].T * (Y[i] - np.matmul(X[i], self.beta[i]))).T, axis=0)
+            if sel[i].size > 0:
+                # lecture reference: p. 162
+                # dim:  (num_features x 1) + (1x1) * sum(((batch_size x num_features)^T . ((batch_size x 1) - (batch_size x num_features) * (num_features x 1)))^T)
+                #     = (num_features x 1) + (1x1) * sum(((batch_size x num_features)^T .  (batch_size x 1))^T)
+                #     = (num_features x 1) + (1x1) * sum((batch_size x num_features), axis=0)
+                #     = (num_features x 1) + (1x1) * (num_features x 1)
+                #     = (num_features x 1)
+                self.beta[i] = self.beta[i] + (self.alpha / sel[i].size) * np.sum((X[sel[i]].T * (Y[sel[i]] - np.matmul(X[sel[i]], self.beta[i]))).T, axis=0)
+
+        print(self.beta)
 
 
     def nstep_gradientUpdate(self):
