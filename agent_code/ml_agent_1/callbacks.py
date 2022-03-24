@@ -51,6 +51,7 @@ def act(self, game_state: dict) -> str:
     else:
         self.logger.debug("Querying model for action.")
         action = ACTIONS[self.model.predictAction(state_to_features(game_state))]
+        self.logger.debug(f"Chose action {action}")
 
     return action
 
