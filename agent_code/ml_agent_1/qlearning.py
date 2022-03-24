@@ -7,6 +7,14 @@ from numba import njit, prange
 
 Transition = namedtuple('Transition', ('X', 'action', 'nextX', 'reward'))
 
+INITIAL_BETA = np.array([[1,-0.1,-0.1,-0.1],
+                        [-0.1, 1,-0.1,-0.1],
+                        [-0.1,-0.1,1,-0.1],
+                        [-0.1,-0.1,-0.1,1],
+                        [-0.1,-0.1,-0.1,-0.1],
+                        [-0.5,-0.5,-0.5,-0.5],
+])
+
 class QLearningModel:
     """ 
     This class implements the Q-Learning model as a method for reinforcement learning,
@@ -106,7 +114,7 @@ class QLearningModel:
             self.beta_new = True
 
 
-    def setupTraining(self, alpha, gamma, buffer_size, batch_size, n=0, initial_beta = None):
+    def setupTraining(self, alpha, gamma, buffer_size, batch_size, n=0, initial_beta = INITIAL_BETA):
         """
         This function sets up everything needed to train the model. It needs to be called only
         if the model is to be trained.
