@@ -22,8 +22,9 @@ N                   = 0
 MEASUREMENT =   True
 
 # Events
-PLACEHOLDER_EVENT = "PLACEHOLDER"
-
+MOVED_TO_COIN = 'MOVED_TO_COIN'
+MOVED_FROM_BOMB = 'MOVED_FROM_BOMB'
+MOVED_FROM_EXPLOSION = 'MOVED_FROM_EXPLOSION'
 
 def setup_training(self):
     """
@@ -73,17 +74,25 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     self.logger.debug(f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}')
 
     # Idea: Add your own events to hand out rewards
-    #if ...:
-    #    events.append(PLACEHOLDER_EVENT)
-
-    feature = state_to_features(old_game_state) # urdl
-
-    if np.argmax(feature[0:4]) == ACTIONS.index(self_action):
-        events.append(PLACEHOLDER_EVENT)
+    old_features = state_to_features(old_game_state)
+    ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
+    featurecounter = 0
+    coindensity = old_features[featurecounter:featurecounter+4]
+    featurecounter += 4
+    #bombdensity = old_features[featurecounter:featurecounter+5]
+    #featurecounter += 5
+    #explosiondensity = old_features[featurecounter:featurecounter+5]
+    #featurecounter += 5
+    if ACTIONS.index(self_action) == np.argmax(coindensity):
+        events.append("MOVED_TO_COIN")
+    #if ACTIONS.index(self_action) == np.argmax(bombdensity):
+    #    events.append("MOVED_FROM_BOMB")
+    #if ACTIONS.index(self_action) == np.argmax(explosiondensity):
+    #    events.append("MOVED_FROM_EXPLOSION")
     
     # state_to_features is defined in callbacks.py
     t = Transition(
-        state_to_features(old_game_state),
+        old_features,
         ACTIONS.index(self_action),
         state_to_features(new_game_state),
         reward_from_events(self, events)
@@ -147,7 +156,7 @@ def reward_from_events(self, events: List[str]) -> int:
         e.MOVED_RIGHT: -1,
         e.MOVED_UP: -1,
         e.MOVED_DOWN: -1,
-        e.WAITED: -10,
+        e.WAITED: -12,
         e.INVALID_ACTION: -10,
 
         e.BOMB_DROPPED: -50,
@@ -163,7 +172,9 @@ def reward_from_events(self, events: List[str]) -> int:
         e.OPPONENT_ELIMINATED: 0,
         e.SURVIVED_ROUND: 30,
         
-        PLACEHOLDER_EVENT: 10  
+        MOVED_TO_COIN: 5,
+        MOVED_FROM_BOMB: 3,
+        MOVED_FROM_EXPLOSION: 3,
     }
 
     reward_sum = 0
