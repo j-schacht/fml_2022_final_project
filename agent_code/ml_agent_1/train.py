@@ -50,6 +50,11 @@ ESCAPE_R            = 5
 ESCAPE_D            = 6
 ESCAPE_L            = 7
 ESCAPE_M            = 8
+CRATE_DENSITY_U     = 9
+CRATE_DENSITY_R     = 10
+CRATE_DENSITY_D     = 11
+CRATE_DENSITY_L     = 12
+CORNERS_AND_BLAST   = 13
 
 
 def setup_training(self):
@@ -111,23 +116,23 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
 
     coindensity = old_features[COIN_DENSITY_U:COIN_DENSITY_L]
     escape = old_features[ESCAPE_U:ESCAPE_M]
-    #cratedensity = old_features[featurecounter:featurecounter+4]
+    cratedensity = old_features[CRATE_DENSITY_U:CRATE_DENSITY_L]
     #bombdensity = old_features[featurecounter:featurecounter+5]
     #explosiondensity = old_features[featurecounter:featurecounter+5]
-    #cornersandblast = old_features[featurecounter]
+    cornersandblast = old_features[CORNERS_AND_BLAST]
     
     if last_action == np.argmax(coindensity) and np.argmax(coindensity) != 0:
         events.append("MOVED_TO_COIN")
     if last_action == np.argmax(escape) and np.argmax(escape) != 0: # 0 means no bombs
         events.append("MOVED_FROM_BOMBEXPL")
-    #if last_action == np.argmax(cratedensity) and np.argmax(cratedensity) != 0:
-    #    events.append("MOVED_TO_CRATE")
+    if last_action == np.argmax(cratedensity) and np.argmax(cratedensity) != 0:
+        events.append("MOVED_TO_CRATE")
     #if last_action == np.argmax(bombdensity) and np.argmax(bombdensity) != 1:
     #    events.append("MOVED_FROM_BOMB")
     #if last_action == np.argmax(explosiondensity) and np.argmax(explosiondensity) != 1:
     #    events.append("MOVED_FROM_EXPLOSION")
-    #if self_action == 'BOMB' and cornersandblast >= 1.0:
-    #    events.append("PLACED_BOMB_WELL")
+    if self_action == 'BOMB' and cornersandblast >= 1.0:
+        events.append("PLACED_BOMB_WELL")
 
     
     # state_to_features is defined in callbacks.py

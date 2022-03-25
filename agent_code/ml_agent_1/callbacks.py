@@ -9,7 +9,7 @@ from agent_code.coin_collector_agent.callbacks import act as coin_collector_act
 EPSILON_START = 1.0
 
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
-NUM_FEATURES = 9
+NUM_FEATURES = 14
 
 """
 TODO
@@ -116,7 +116,7 @@ def state_to_features(game_state: dict) -> np.array:
     freefield = np.ones((cols,rows)) -wallsmap -bombsmap -othersmap
     
     # map of spaces that have blastable objects
-    #blastablesmap = cratesmap + othersmap
+    blastablesmap = cratesmap + othersmap
 
     # matrix for the density calculations
     crossmatrix = np.array([[
@@ -133,11 +133,11 @@ def state_to_features(game_state: dict) -> np.array:
     coindensmap = densitymap(coinmap, freefield, crossmatrix, weight = 0.2, exponent = 1, iterations = 7)
     features['coindensity'] = neighborvalues(ownpos, coindensmap)
     features['coindensity'].pop(4) # the own position does not contain coins
-    '''
+    
     cratedensmap = densitymap(cratesmap, notwallsmap, crossmatrix, weight = 0.3, exponent = 1, iterations = 5)
     features['cratedensity'] = neighborvalues(ownpos, cratedensmap*freefield)
     features['cratedensity'].pop(4) # the own position does not contain crates
-    '''
+    
     dangermap = dangerzones(bombsmapcounter, notwallsmap, crossmatrix, uppermatrix)
     if sum(neighborvalues(ownpos, dangermap)) != 0 or np.sum(explosionmap) != 0:
         spacemap = densitymap(freefield, freefield, crossmatrix, weight = 0.5, exponent = 1, iterations = 3)
@@ -147,7 +147,7 @@ def state_to_features(game_state: dict) -> np.array:
         features['escape'] = neighborvalues(ownpos, escapemap)
     else:
         features['escape'] = [0]*5
-    '''
+    
     # number of free corners in each direction
     features['freecorners'] = find_corners(ownposmap, freefield, crossmatrix, uppermatrix)
 
@@ -157,7 +157,7 @@ def state_to_features(game_state: dict) -> np.array:
     # feature to determine wether a bomb should be dropped
     freecorners = sum(features['freecorners'])
     features['cornersandblast'] = [sum(features['blastables'])*freecorners/(freecorners+2)]
-
+    '''
     #if freecorners+2 == 0: # TODO: Solve divide by 0 issue
           #print(features['freecorners']) 
     
@@ -225,7 +225,7 @@ def state_to_features(game_state: dict) -> np.array:
     # cornersandblast:1
     #usedfeatures = ['freedomdensity','coindensity','freecorners','blastables','closest_coin_distance','closest_3_coins_distance']
     #usedfeatures = ['coindensity','cratedensity','bombexplcombined','cornersandblast']
-    usedfeatures = ['coindensity', 'escape']
+    usedfeatures = ['coindensity', 'escape', 'cratedensity', 'cornersandblast']
     #usedfeatures = ['coindensity']
     featurearray = features_dict_to_array(features, usedfeatures)
     return featurearray
