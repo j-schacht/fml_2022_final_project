@@ -318,7 +318,7 @@ def nstep_gradientUpdate(self):
             if sel[i].size > 0:
                 self.beta[i] = self.beta[i] + (self.alpha / sel[i].size) * np.sum((X[sel[i]].T * (Y[sel[i]] - np.matmul(X[sel[i]], self.beta[i]))).T, axis=0)
 
-
+    
     def Q(self, X, a):
         """
         This is the action value function. It returns a value for a given combination of a 1D feature vector and 
