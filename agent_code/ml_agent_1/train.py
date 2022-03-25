@@ -109,8 +109,8 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     #    events.append("MOVED_FROM_BOMB")
     #if ACTIONS.index(self_action) == np.argmax(explosiondensity) and np.argmax(explosiondensity) != 1:
     #    events.append("MOVED_FROM_EXPLOSION")
-    if ACTIONS.index(self_action) == np.argmax(bombexplcombined) and np.argmax(bombexplcombined) != 2: # TODO: Why?
-        events.append("MOVED_FROM_BOMBEXPL")
+    #if ACTIONS.index(self_action) == np.argmax(bombexplcombined) and np.argmax(bombexplcombined) != 2: # TODO: Why?
+    #    events.append("MOVED_FROM_BOMBEXPL")
     
     # state_to_features is defined in callbacks.py
     t = Transition(
