@@ -168,7 +168,7 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
         self.counter_nstep = 0
         # make sure that no information gets lost
         if self.counter >= BUFFER_SIZE:
-            self.model.gradientUpdate()
+            self.model.nstep_gradientUpdate()
     
 
 
