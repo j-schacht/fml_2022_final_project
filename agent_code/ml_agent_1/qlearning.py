@@ -275,14 +275,22 @@ class QLearningModel:
 
     def nstep_gradientUpdate(self):
 
-            '''
-            This function performs the gradient step of the Q-function in n-step TD Q-learning.
-            '''
+            #This function performs the gradient step of the Q-function in n-step TD Q-learning.
             
             assert self.training_mode == True
             assert type(self.buffer_size) is int
             assert type(self.n) is int
             assert self.n > 0
+            assert self.nn > 0
+
+            if not exists(self.gamma_matrix): # create a matrix for nn-step Q-learning
+                GAMMAH = [0] + [self.gamma**i for i in range(self.nn)]
+                for i in range(self.buffer_size-(self.nn+1)):
+                    GAMMAH = GAMMAH + [0 for i in range(self.buffer_size-self.nn+1)] + [self.gamma**i for i in range(self.nn)]
+                GAMMAH = np.asarray(GAMMAH).reshape(self.buffer_size-self.nn,self.buffer_size)
+                bla = np.concatenate((np.zeros((self.nn,self.buffer_size-self.nn)),np.eye(self.nn, dtype='float')),axis=1)
+                self.gamma_matrix = np.concatenate((GAMMAH,bla),axis=0)
+
 
             X = self.buffer_X                   # dim: (buffer_size x num_features)
             nextX = self.buffer_nextX               # dim: (buffer_size x num_features)
@@ -296,16 +304,8 @@ class QLearningModel:
             bla3 = np.zeros((self.nn,self.buffer_size-self.nn))
             temp = np.concatenate((np.concatenate((bla1,bla2),axis=1),np.concatenate((bla3,np.eye(self.nn)),axis=1)),axis=0)
 
-            # create a matrix GAMMAH for nn-step Q-learning
-            GAMMAH = [0] + [self.gamma**i for i in range(self.nn)]
-            for i in range(self.buffer_size-(self.nn+1)):
-                GAMMAH = GAMMAH + [0 for i in range(self.buffer_size-self.nn+1)] + [self.gamma**i for i in range(self.nn)]
-            GAMMAH = np.asarray(GAMMAH).reshape(self.buffer_size-self.nn,self.buffer_size)
-            bla = np.concatenate((np.zeros((self.nn,self.buffer_size-self.nn)),np.eye(self.nn, dtype='float')),axis=1)
-            GAMMAH = np.concatenate((GAMMAH,bla),axis=0)
 
-
-            Y = np.matmul(GAMMAH,reward) + np.matmul(temp,maxQ)
+            Y = np.matmul(self.gamma_matrix,reward) + np.matmul(temp,maxQ)
 
             # generate the batch of actions for each beta-vector
             sel = np.zeros((self.num_actions), dtype=np.ndarray)
