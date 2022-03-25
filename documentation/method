@@ -1,0 +1,87 @@
+Step 00: First tries
+    - problem at first: values for beta were exploding
+    - attempts:
+    - we had to choose a much smaller value for alpha
+    - did some measurements to find suitable hyperparameters to start with: 
+        ALPHA       = 0.0001
+        GAMMA       = 0.6
+        BUFFER_SIZE = 50
+    - instead of using a static epsilon, we introduced a start value, min-value and decreasing factor
+    - initializing beta with uniform distribution instead of 0
+    - more balanced reward function
+    - introducing custom events & rewards (e.g., punish longer waiting, reward step towards coin) 
+    - modification of the epsilon policy: use act() function of rule_based_agent or coin_collector_agent instead
+      of choosing a random action
+
+Step 01: Making the agent collect coins 
+    - used coindensity features only (1 feature for each direction --> 4 features total)
+    - trained without other agents in coin-heaven
+    - reduced game time from 400 to 200 to improve training speed
+    - modified epsilon policy, such that bombs are not dropped randomly (p=[.2, .2, .2, .2, .2, 0])
+    - initialized beta with uniform distribution (but also created an initial beta which leads to a faster convergence)
+    - introduced new event "MOVED_TO_COIN" which is triggered if the agent does one step towards highest coin density
+    - relevant rewards:
+        e.MOVED_LEFT: -2,           # costs for every move prevent the agent from just going back and forth
+        e.MOVED_RIGHT: -2,
+        e.MOVED_UP: -2,
+        e.MOVED_DOWN: -2,
+        e.WAITED: -6,               # in this scenario, moving is always better than waiting 
+        e.INVALID_ACTION: -10,      # a bit larger penalty than waiting, because we want our agent to learn not to run into walls
+        e.BOMB_DROPPED: -30,        # we don't want to drop bombs yet
+        e.COIN_COLLECTED: 40,       # collecting coins is the main goal 
+        e.KILLED_SELF: -100,
+        e.SURVIVED_ROUND: 100,
+        MOVED_TO_COIN: 2            # this event is needed to make the agent go towards the coins. It must compensate for the costs of moving
+                                    # towards the coin, but it also shouldn't be larger to avoid that the agent is just going back and forth.
+    - hyperparameters:
+        EPSILON_START       = 1.0 
+        EPSILON_DECREASE    = 0.999
+        EPSILON_MIN         = 0.1
+        ALPHA               = 0.0001
+        GAMMA               = 0.6
+        BUFFER_SIZE         = 50
+    - call to train the model:
+        python main.py play --agents ml_agent_1 --scenario coin-heaven --train 1 --n-rounds 700 --no-gui
+        (model converged already after 700 episodes)
+    - measurement results:
+        measurements/for_documentation/measurement_step01_2022-03-24_21-24-44_1.0_0.0001_0.6_25_50.csv
+    - model:
+        measurements/for_documentation/model_step01.npy
+    - result:
+        Agent collects coins very well. It only sometimes gets stuck, which is due to the radius of the coin density 
+        feature (higher radius needs more performance and would be slower). We expect this to not be a problem later, 
+        since we will add other features causing the agent to act.
+
+Step 02: Making the agent protect itself from bombs
+    - using the model trained in step 01, which can already collect coins
+    - added bombexplcombined feature (1 feature for each direction + own position)
+    - 9 features in total
+    - trained without other agents in coin-heaven
+    - epsilon-policy does now allow random bomb drops (p=[.2, .2, .2, .2, .1, .1])
+    - the agent should learn to run away from its own randomly dropped bombs
+    - kept game time at 200 for this step to improve training speed
+    - introduced new event "MOVED_FROM_BOMBEXPL" which is triggered if the agent does one step away from highest bomb and explosion density
+    - feature is limited to the radius of bombs/explosions
+    - changed and added rewards:
+        MOVED_FROM_BOMBEXPL: 5      # Makes the agent run away from bombs and explosions. Must compensate for costs of moving.
+                                    # Should be larger than MOVED_TO_COIN because surviving has higher priority
+    - hyperparameters:
+        EPSILON_START       = 1.0 
+        EPSILON_DECREASE    = 0.999
+        EPSILON_MIN         = 0.1
+        ALPHA               = 0.0001
+        GAMMA               = 0.6
+        BUFFER_SIZE         = 50
+        (kept all hyperparameters the same, which worked fine)
+    - call to train the model:
+        python main.py play --agents ml_agent_1 --scenario coin-heaven --train 1 --n-rounds 2000 --no-gui
+        (this time, the model took a bit longer to converge)
+    - measurement results:
+        measurements/for_documentation/measurement_step02_2022-03-25_09-40-01_1.0_0.0001_0.6_25_50.csv
+    - model:
+        measurements/for_documentation/model_step02.npy
+    - result:
+        Tested the agent by letting it play against rule_based_agent in coin heaven. It still collects the coins
+        very well (better than the rule_based_agent most of the time) and it manages to escape all bombs of its 
+        opponent. Sometimes, it still gets stuck, but less often. In this scenario it can even win against the
+        rule_based_agent.
