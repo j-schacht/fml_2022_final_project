@@ -144,14 +144,14 @@ class QLearningModel:
         self.logger.info(f"Setting up Q-Learning Model for training.")
         self.logger.info(f"Hyperparameters: alpha = {alpha}, gamma = {gamma}, buffer_size = {buffer_size}")
         if n > 0:
-            self.logger.info(f"n-step Q-Learning will be used instead of normal Q-Learning. N = {n}")
+            self.logger.info(f"n-step Q-Learning will be used instead of normal Q-Learning. N = {n}, NN = {nn}")
 
         self.alpha = alpha
         self.gamma = gamma
         self.buffer_size = buffer_size
         self.batch_size = batch_size
         self.n = n
-        self.nn = nn
+        self.nn = nn    # TODO: add this attribute to comments
         self.gamma_matrix = np.zeros((buffer_size,buffer_size))                           #temporary
 
         # one buffer for each attribute of Transition type
