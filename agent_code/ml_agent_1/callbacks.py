@@ -140,7 +140,7 @@ def state_to_features(game_state: dict) -> np.array:
         spacemap = densitymap(freefield, freefield, crossmatrix, weight = 0.5, exponent = 1, iterations = 3)
         escapemap = spacemap - dangermap
         escapemap = escapemap - np.min(escapemap)
-        escapemap = escapemap/np.max(escapemap)*(np.ones((cols,rows)) - explosionmap)
+        escapemap = escapemap/np.max(escapemap)*(np.ones((cols,rows)) - explosionmap)*freefield
         features['escape'] = neighborvalues(ownpos, escapemap)
     else:
         features['escape'] = [0]*5
