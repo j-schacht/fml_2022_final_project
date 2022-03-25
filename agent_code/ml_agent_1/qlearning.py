@@ -122,7 +122,7 @@ class QLearningModel:
             self.beta_new = np.ones(num_features, dtype=bool)
 
 
-    def setupTraining(self, alpha, gamma, buffer_size, batch_size, n=0, initial_beta=None):
+    def setupTraining(self, alpha, gamma, buffer_size, batch_size, n=0, nn=0, initial_beta=None):
         """
         This function sets up everything needed to train the model. It needs to be called only
         if the model is to be trained.
@@ -151,6 +151,8 @@ class QLearningModel:
         self.buffer_size = buffer_size
         self.batch_size = batch_size
         self.n = n
+        self.nn = nn
+        self.gamma_matrix = np.zeros((buffer_size,buffer_size))                           #temporary
 
         # one buffer for each attribute of Transition type
         self.buffer_X = np.zeros((buffer_size, self.num_features))
@@ -288,38 +290,51 @@ class QLearningModel:
 
 
     def nstep_gradientUpdate(self):
-        '''
-        This function performs the gradient step of the Q-function in n-step TD Q-learning.
-        '''
-        assert self.training_mode == True
-        assert type(self.buffer_size) is int
-        assert type(self.n) is int
-        assert self.n > 0
 
-        X = self.buffer_X                   # dim: (buffer_size x num_features)
-        nextX = self.buffer_nextX               # dim: (buffer_size x num_features)
-        reward = self.buffer_reward             # dim: (buffer_size x 1)
-        action = self.buffer_action
+            #This function performs the gradient step of the Q-function in n-step TD Q-learning.
+            
+            assert self.training_mode == True
+            assert type(self.buffer_size) is int
+            assert type(self.n) is int
+            assert self.n > 0
+            assert self.nn > 0
 
-        # calculate current guess of Q-function: 
-        maxQ = np.max(np.matmul(nextX, self.beta.T),axis=1)
+            if np.max(self.gamma_matrix) == 0: # create a matrix to multiply reward with in nstep Ql
+                gammat = [0] + [self.gamma**(self.nn-1-i) for i in range(self.nn)]
+                for i in range(self.buffer_size-(self.nn+1)):
+                    gammat = gammat + [0 for i in range(self.buffer_size-self.nn+1)] + [self.gamma**(self.nn-1-i) for i in range(self.nn)]
 
-        Y = np.zeros(self.buffer_size)
-        # calculate response Y 
-        # the reward array will be used to store the response Y
-        for i in range(self.buffer_size -self.n): # I think this is expensive as long as not vectorized ...to be continued
-            Y[i] = np.dot(np.array(reward[i+1:i+1+self.n])[None,...],np.array([self.gamma**i for i in range(self.n)])[...,None]) + self.gamma**self.n*maxQ[i+self.n]
-        for i in range(self.n):
-            Y[i+self.n] = np.array(reward)[i+self.n] + (self.gamma * maxQ[i+self.n])
-        
-        
-        # generate the batch of actions for each beta-vector
-        for i in range(self.num_actions):
-            sel = np.where(action == i)[0]
+                gammat = np.asarray(gammat).reshape(self.buffer_size-self.nn,self.buffer_size)
+                bla = np.concatenate((np.eye(self.nn, dtype='float'),np.zeros((self.nn,self.buffer_size-self.nn))),axis=1)
+                self.gamma_matrix = np.concatenate((bla,gammat),axis=0)
+
+            X = self.buffer_nextX                   # dim: (buffer_size x num_features)
+            nextX = self.buffer_nextX               # dim: (buffer_size x num_features)
+            reward = self.buffer_reward             # dim: (buffer_size x 1)
+            action = self.buffer_action
+
+            #calculate maxQ
+            maxQ = np.max(np.matmul(nextX, self.beta.T), axis=1)
+
+            # calculate matrix to multiply with current guess of Q-function:
+            bla1 = np.zeros((self.nn,self.buffer_size-self.nn))
+            bla2 = self.gamma**self.nn * np.eye((self.buffer_size-self.nn), dtype='float')
+            bla3 = np.zeros((self.buffer_size-self.nn,self.nn))
+            bla4 = self.gamma * np.eye((self.nn))
+            temp = np.concatenate((np.concatenate((bla4,bla1),axis=1),np.concatenate((bla2,bla3),axis=1)),axis=0)
+
+
+            Y = np.matmul(self.gamma_matrix,reward) + np.matmul(temp,maxQ)
+
+            # generate the batch of actions for each beta-vector
+            sel = np.zeros((self.num_actions), dtype=np.ndarray)
+            for i in range(self.num_actions):
+                sel[i] = np.where(action == i)[0]
 
             # calculate the new beta-vectors as in gradientUpdate:
-            if sel.size > 0:
-                self.beta[i] = self.beta[i] + (self.alpha / sel.size) * np.sum((X[sel].T * (Y[sel] - np.matmul(X[sel], self.beta[i]))).T, axis=0)
+            for i in range(self.num_actions):
+                if sel[i].size > 0:
+                    self.beta[i] = self.beta[i] + (self.alpha / sel[i].size) * np.sum((X[sel[i]].T * (Y[sel[i]] - np.matmul(X[sel[i]], self.beta[i]))).T, axis=0)
 
 
     def Q(self, X, a):

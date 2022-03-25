@@ -9,7 +9,7 @@ from agent_code.coin_collector_agent.callbacks import act as coin_collector_act
 EPSILON_START = 1.0
 
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
-NUM_FEATURES = 9
+NUM_FEATURES = 4
 
 """
 TODO
@@ -46,8 +46,8 @@ def act(self, game_state: dict) -> str:
     if self.train and random.random() < self.epsilon:                                  
         self.logger.debug("Choosing action purely at random.")
         # 80%: walk in any direction. 10% wait. 10% bomb.
-        action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])
-        #action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .2, 0])
+        #action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])
+        action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .2, 0])
         #action = coin_collector_act(self, game_state)
     else:
         self.logger.debug("Querying model for action.")
@@ -126,7 +126,7 @@ def state_to_features(game_state: dict) -> np.array:
     coindensmap = densitymap(coinmap, freefield, crossmatrix, weight = 0.2, exponent = 1, iterations = 7)
     features['coindensity'] = neighborvalues(ownpos, coindensmap)
     features['coindensity'].pop(4) # the own position does not contain coins
-
+    '''
     cratedensmap = densitymap(cratesmap, notwallsmap, crossmatrix, weight = 0.2, exponent = 1, iterations = 5)
     features['cratedensity'] = neighborvalues(ownpos, coindensmap)
     features['cratedensity'].pop(4) # the own position does not contain crates
@@ -140,7 +140,7 @@ def state_to_features(game_state: dict) -> np.array:
     features['explosiondensity'] = neighborvalues(ownpos, explosiondensmap)
     
     features['bombexplcombined'] = neighborvalues(ownpos, bombdensmap+explosiondensmap)
-    '''
+    
     # number of free corners in each direction
     features['freecorners'] = find_corners(ownposmap, freefield, crossmatrix)
 
@@ -219,7 +219,8 @@ def state_to_features(game_state: dict) -> np.array:
     # cornersandblast:1
     #usedfeatures = ['freedomdensity','coindensity','bombdensity','explosiondensity','freecorners','blastables','closest_coin_distance','closest_3_coins_distance']
     #usedfeatures = ['coindensity','cratedensity','bombexplcombined','cornersandblast']
-    usedfeatures = ['coindensity', 'bombexplcombined']
+    #usedfeatures = ['coindensity', 'bombexplcombined']
+    usedfeatures = ['coindensity']
     featurearray = features_dict_to_array(features, usedfeatures)
     return featurearray
 

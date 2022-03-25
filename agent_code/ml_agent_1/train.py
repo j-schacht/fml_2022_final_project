@@ -15,8 +15,10 @@ GAMMA               = 0.6
 BUFFER_SIZE         = 50
 BATCH_SIZE          = 25    # TODO: remove ?
 
-# step size for n-step q-learning (set to zero to use normal q-learning)
-N                   = 0
+# how often updates are made in N-step Q-learning:
+N                   = 20
+# the real N in N-step Q-learning:
+NN                  = 10
 
 INITIAL_BETA = np.array([[1,-0.1,-0.1,-0.1],
                         [-0.1, 1,-0.1,-0.1],
@@ -25,6 +27,7 @@ INITIAL_BETA = np.array([[1,-0.1,-0.1,-0.1],
                         [-0.1,-0.1,-0.1,-0.1],
                         [-0.5,-0.5,-0.5,-0.5],
 ])
+
 
 # Measurements
 MEASUREMENT =   True
@@ -65,11 +68,13 @@ def setup_training(self):
     self.batch_size = BATCH_SIZE
 
     self.n = N
+    self.nn = NN
     self.counter = 0
     self.counter_nstep = 0
+    self.gamma_matrix = np.zeros((BUFFER_SIZE,BUFFER_SIZE))                                                   #temporary
 
-    #self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE, n=self.n, initial_beta=INITIAL_BETA)
-    self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE, n=self.n)
+    #self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE, n=self.n, nn=self.nn, initial_beta=INITIAL_BETA)
+    self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE, n=self.n, nn=self.nn)
 
     # file name for measurements 
     if MEASUREMENT: # TODO: epsilon decreasing!
@@ -125,6 +130,7 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     #    events.append("MOVED_FROM_EXPLOSION")
     #if self_action == 'BOMB' and cornersandblast >= 1.0:
     #    events.append("PLACED_BOMB_WELL")
+
     
     # state_to_features is defined in callbacks.py
     # The feature vector for the new state is used here for the first time, so we have to compute it first.
@@ -146,7 +152,7 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     else:
         # n-step q-learning
         if self.counter_nstep % self.n == 1 and self.counter >= BUFFER_SIZE and BUFFER_SIZE <= self.counter_nstep:
-            self.model.nstep_gradientUpdate()
+            self.model.nstep_gradientUpdate() 
             self.counter = self.counter + 1
             self.counter_nstep = self.counter_nstep + 1
         else:
