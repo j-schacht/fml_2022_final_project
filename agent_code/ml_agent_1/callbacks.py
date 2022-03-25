@@ -3,13 +3,13 @@ import numpy as np
 from igraph import * 
 from .qlearning import *
 
-# temporary
+# TODO: temporary
 from agent_code.coin_collector_agent.callbacks import act as coin_collector_act
 
 EPSILON_START = 1.0
 
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
-NUM_FEATURES = 14
+NUM_FEATURES = 9
 
 """
 TODO
@@ -40,6 +40,7 @@ def act(self, game_state: dict) -> str:
     :param game_state: The dictionary that describes everything on the board.
     :return: The action to take as a string.
     """
+    #print(state_to_features(game_state))
 
     # epsilon-greedy policy:
     if self.train and random.random() < self.epsilon:                                  
@@ -106,7 +107,7 @@ def state_to_features(game_state: dict) -> np.array:
     freefield = np.ones((cols,rows)) -wallsmap -bombsmap -othersmap
     
     # map of spaces that have blastable objects
-    blastablesmap = cratesmap + othersmap
+    #blastablesmap = cratesmap + othersmap
 
     # matrix for the density calculations
     crossmatrix = np.array([[
@@ -119,11 +120,11 @@ def state_to_features(game_state: dict) -> np.array:
     coindensmap = densitymap(coinmap, freefield, crossmatrix, weight = 0.2, exponent = 1, iterations = 7)
     features['coindensity'] = neighborvalues(ownpos, coindensmap)
     features['coindensity'].pop(4) # the own position does not contain coins
-    
+
     cratedensmap = densitymap(cratesmap, notwallsmap, crossmatrix, weight = 0.2, exponent = 1, iterations = 5)
     features['cratedensity'] = neighborvalues(ownpos, coindensmap)
     features['cratedensity'].pop(4) # the own position does not contain crates
-
+    
     bombdensmap = densitymap(bombsmap, notwallsmap, crossmatrix, weight = 0.6, exponent = 1, iterations = 5)
     bombdensmap = -bombdensmap + freefield
     features['bombdensity'] = neighborvalues(ownpos, bombdensmap)
@@ -133,7 +134,7 @@ def state_to_features(game_state: dict) -> np.array:
     features['explosiondensity'] = neighborvalues(ownpos, explosiondensmap)
     
     features['bombexplcombined'] = neighborvalues(ownpos, bombdensmap+explosiondensmap)
-
+    '''
     # number of free corners in each direction
     features['freecorners'] = find_corners(ownposmap, freefield, crossmatrix)
 
@@ -143,7 +144,10 @@ def state_to_features(game_state: dict) -> np.array:
     # feature to determine wether a bomb should be dropped
     freecorners = sum(features['freecorners'])
     features['cornersandblast'] = [sum(features['blastables'])*freecorners/(freecorners+2)]
-    '''
+
+    #if freecorners+2 == 0: # TODO: Solve divide by 0 issue
+          #print(features['freecorners']) 
+    
     # calculate distance to the closest coin using graph algorithms
     if len(coins) > 0:
         cols = field.shape[0] # x
@@ -208,7 +212,8 @@ def state_to_features(game_state: dict) -> np.array:
     # closest_3_coins_distance:1
     # cornersandblast:1
     #usedfeatures = ['freedomdensity','coindensity','bombdensity','explosiondensity','freecorners','blastables','closest_coin_distance','closest_3_coins_distance']
-    usedfeatures = ['coindensity','cratedensity','bombexplcombined','cornersandblast']
+    #usedfeatures = ['coindensity','cratedensity','bombexplcombined','cornersandblast']
+    usedfeatures = ['coindensity', 'bombexplcombined']
     featurearray = features_dict_to_array(features, usedfeatures)
     return featurearray
 
