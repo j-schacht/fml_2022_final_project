@@ -9,7 +9,7 @@ from agent_code.coin_collector_agent.callbacks import act as coin_collector_act
 EPSILON_START = 1.0
 
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
-NUM_FEATURES = 4
+NUM_FEATURES = 9
 
 """
 TODO
@@ -47,7 +47,7 @@ def act(self, game_state: dict) -> str:
         self.logger.debug("Choosing action purely at random.")
         # 80%: walk in any direction. 10% wait. 10% bomb.
         #action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])
-        action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .2, 0])
+        action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .2, .0])
         #action = coin_collector_act(self, game_state)
     else:
         self.logger.debug("Querying model for action.")
@@ -120,6 +120,10 @@ def state_to_features(game_state: dict) -> np.array:
         1 if abs(i-j)==1 else 0 for i in range(cols)
         ] for j in range(rows)])
 
+    uppermatrix = np.array([[
+        1 if i-j ==1 else 0 for i in range(cols)
+        ] for j in range(rows)])
+
     #freedommap = densitymap(freefield, freefield, crossmatrix, weight = 0.1, exponent = 1, iterations = 10)
     #features['freedomdensity'] = neighborvalues(ownpos, freedommap)
 
@@ -130,22 +134,22 @@ def state_to_features(game_state: dict) -> np.array:
     cratedensmap = densitymap(cratesmap, notwallsmap, crossmatrix, weight = 0.2, exponent = 1, iterations = 5)
     features['cratedensity'] = neighborvalues(ownpos, coindensmap)
     features['cratedensity'].pop(4) # the own position does not contain crates
-    
-    bombdensmap = densitymap(bombsmap, notwallsmap, crossmatrix, weight = 0.6, exponent = 1, iterations = 5)
-    bombdensmap = -bombdensmap + freefield
-    features['bombdensity'] = neighborvalues(ownpos, bombdensmap)
-
-    explosiondensmap = densitymap(explosionmap, freefield, crossmatrix, weight = 0.2, exponent = 1, iterations = 1)
-    explosiondensmap = -explosiondensmap + freefield
-    features['explosiondensity'] = neighborvalues(ownpos, explosiondensmap)
-    
-    features['bombexplcombined'] = neighborvalues(ownpos, bombdensmap+explosiondensmap)
-    
+    '''
+    dangermap = dangerzones(bombsmap, notwallsmap, crossmatrix, uppermatrix)
+    if sum(neighborvalues(ownpos, dangermap)) != 0 or np.sum(explosionmap) != 0:
+        spacemap = densitymap(freefield, freefield, crossmatrix, weight = 0.5, exponent = 1, iterations = 3)
+        escapemap = spacemap - dangermap
+        escapemap = escapemap - np.min(escapemap)
+        escapemap = escapemap/np.max(escapemap)*(np.ones((cols,rows)) - explosionmap)
+        features['escape'] = neighborvalues(ownpos, escapemap)
+    else:
+        features['escape'] = [0]*5
+    '''
     # number of free corners in each direction
-    features['freecorners'] = find_corners(ownposmap, freefield, crossmatrix)
+    features['freecorners'] = find_corners(ownposmap, freefield, crossmatrix, uppermatrix)
 
     # number of objects that can be destroyed in each direction
-    features['blastables'] = find_blastables(ownposmap, blastablesmap, notwallsmap, crossmatrix)
+    features['blastables'] = find_blastables(ownposmap, blastablesmap, notwallsmap, crossmatrix, uppermatrix)
 
     # feature to determine wether a bomb should be dropped
     freecorners = sum(features['freecorners'])
@@ -209,18 +213,17 @@ def state_to_features(game_state: dict) -> np.array:
     # freedomdensity:5
     # coindensity:4
     # cratedensity:4
-    # bombdensity:5
-    # explosiondensity:5
+    # escape : 5
     # bombexplcombined:1
     # freecorners:4
     # blastables:4
     # closest_coin_distance:1
     # closest_3_coins_distance:1
     # cornersandblast:1
-    #usedfeatures = ['freedomdensity','coindensity','bombdensity','explosiondensity','freecorners','blastables','closest_coin_distance','closest_3_coins_distance']
+    #usedfeatures = ['freedomdensity','coindensity','freecorners','blastables','closest_coin_distance','closest_3_coins_distance']
     #usedfeatures = ['coindensity','cratedensity','bombexplcombined','cornersandblast']
-    #usedfeatures = ['coindensity', 'bombexplcombined']
-    usedfeatures = ['coindensity']
+    usedfeatures = ['coindensity', 'escape']
+    #usedfeatures = ['coindensity']
     featurearray = features_dict_to_array(features, usedfeatures)
     return featurearray
 
@@ -254,11 +257,7 @@ def neighborvalues(position, valuefield):
     return neighborval
 
 
-def find_corners(ownmap, freemap, crossmatrix):
-    uppermatrix = np.array([[
-        1 if i-j ==1 else 0 for i in range(freemap.shape[0])
-        ] for j in range(freemap.shape[1])])
-
+def find_corners(ownmap, freemap, crossmatrix, uppermatrix):
     freecorners = []
     for i in range(4):
         numberofcorners = 0
@@ -272,11 +271,7 @@ def find_corners(ownmap, freemap, crossmatrix):
     return freecorners
 
 
-def find_blastables(ownmap, blastablesmap, notwallsmap, crossmatrix):
-    uppermatrix = np.array([[
-        1 if i-j ==1 else 0 for i in range(ownmap.shape[0])
-        ] for j in range(ownmap.shape[1])])
-
+def find_blastables(ownmap, blastablesmap, notwallsmap, crossmatrix, uppermatrix):
     blastables = []
     for i in range(4):
         numberofblastables = 0
@@ -290,6 +285,18 @@ def find_blastables(ownmap, blastablesmap, notwallsmap, crossmatrix):
         blastablesmap = np.rot90(blastablesmap)
     return blastables
 
+def dangerzones(bombsmap, notwallsmap, crossmatrix, uppermatrix):
+    dangerzone = np.zeros((bombsmap.shape[0],bombsmap.shape[1]))
+    for i in range(4):
+        blastmap = bombsmap.copy()
+        for j in range(3):
+            blastmap = np.matmul(uppermatrix,blastmap)*notwallsmap
+            dangerzone = dangerzone + blastmap*(3-j)
+        bombsmap = np.rot90(bombsmap)
+        notwallsmap = np.rot90(notwallsmap)
+        dangerzone = np.rot90(dangerzone)
+    dangerzone = dangerzone + bombsmap*4
+    return dangerzone
 
 def features_dict_to_array(features, usedfeatures):
     featurearray = []

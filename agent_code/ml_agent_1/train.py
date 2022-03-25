@@ -45,11 +45,11 @@ COIN_DENSITY_U      = 0
 COIN_DENSITY_R      = 1
 COIN_DENSITY_D      = 2
 COIN_DENSITY_L      = 3
-BOMBEXPL_DENSITY_U  = 4
-BOMBEXPL_DENSITY_R  = 5
-BOMBEXPL_DENSITY_D  = 6
-BOMBEXPL_DENSITY_L  = 7
-BOMBEXPL_DENSITY_M  = 8
+ESCAPE_U  = 4
+ESCAPE_R  = 5
+ESCAPE_D  = 6
+ESCAPE_L  = 7
+ESCAPE_M  = 8
 
 
 def setup_training(self):
@@ -110,7 +110,7 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     last_action = ACTIONS.index(self_action)
 
     coindensity = old_features[COIN_DENSITY_U:COIN_DENSITY_L]
-    #bombexplcombined = old_features[BOMBEXPL_DENSITY_U:BOMBEXPL_DENSITY_M]
+    escape = old_features[ESCAPE_U:ESCAPE_M]
     #cratedensity = old_features[featurecounter:featurecounter+4]
     #bombdensity = old_features[featurecounter:featurecounter+5]
     #explosiondensity = old_features[featurecounter:featurecounter+5]
@@ -118,8 +118,8 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     
     if last_action == np.argmax(coindensity) and np.argmax(coindensity) != 0:
         events.append("MOVED_TO_COIN")
-    #if last_action == np.argmax(bombexplcombined) and np.argmax(bombexplcombined) != 2: # 2 means no bombs
-    #    events.append("MOVED_FROM_BOMBEXPL")
+    if last_action == np.argmax(escape) and np.argmax(escape) != 0: # 0 means no bombs
+        events.append("MOVED_FROM_BOMBEXPL")
     #if last_action == np.argmax(cratedensity) and np.argmax(cratedensity) != 0:
     #    events.append("MOVED_TO_CRATE")
     #if last_action == np.argmax(bombdensity) and np.argmax(bombdensity) != 1:
