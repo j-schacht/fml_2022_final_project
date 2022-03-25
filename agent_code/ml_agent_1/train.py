@@ -18,7 +18,7 @@ BATCH_SIZE          = 25    # TODO: remove ?
 # how often updates are made in N-step Q-learning:
 N                   = 20
 # the real N in N-step Q-learning:
-NN                  = 5
+NN                  = 10
 
 INITIAL_BETA = np.array([[1,-0.1,-0.1,-0.1],
                         [-0.1, 1,-0.1,-0.1],
