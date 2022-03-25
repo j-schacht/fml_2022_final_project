@@ -4,8 +4,6 @@ from os.path import exists
 import os.path
 from datetime import datetime
 
-# TODO: add some logger outputs
-
 Transition = namedtuple('Transition', ('X', 'action', 'nextX', 'reward'))
 
 class QLearningModel:
@@ -66,9 +64,12 @@ class QLearningModel:
 
     attribute: training_mode
         if true, setupTraining() has been called and the model can be trained.
+
+    attribute: logger
+        optional. a given logger object can be used to output debugging information
     """
 
-    def __init__(self, num_features, num_actions, path="model"):
+    def __init__(self, num_features, num_actions, path="model", logger=None):
         """
         Initialization of the QLearningModel.
         If at the given path no model can be found, a new model will be created.
@@ -83,6 +84,7 @@ class QLearningModel:
 
         self.num_features = num_features
         self.num_actions = num_actions
+        self.logger = logger
         self.path = path + ".npy"
 
         dir = os.path.dirname(path)
@@ -90,9 +92,14 @@ class QLearningModel:
         date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         self.backup_path = os.path.join(dir, "model_backup", file + "_" + date_time + ".npy")
 
+        self.logger.info(f"Initializing Q-Learning Model with {num_features} features and {num_actions} actions.")
+        self.logger.info(f"Model path: {self.path}")
+        self.logger.info(f"Model backup path: {self.backup_path}")
+
         self.training_mode = False
 
         if exists(self.path):
+            self.logger.info("Reading existing model from file.")
             file = open(self.path, 'rb')
             self.beta = np.load(file)
             config = np.load(file)
@@ -105,10 +112,12 @@ class QLearningModel:
             self.beta_new = np.zeros(int(config[0]), dtype=bool)
 
             if int(config[0]) < num_features:
+                self.logger.info(f"The existing model has {int(config[0])} features. Adding {num_features-int(config[0])} more features initialized with uniform distribution.")
                 self.beta = np.append(self.beta, np.random.uniform(low=0.0, high=1.0, size=(num_actions, num_features-int(config[0]))), axis=1)
                 self.beta_new = np.append(self.beta_new, np.ones(num_features-int(config[0]), dtype=bool))
 
         else: 
+            self.logger.info("No existing model found. Initializing new model with uniform distribution.")
             self.beta = np.random.uniform(low=0.0, high=1.0, size=(num_actions, num_features))
             self.beta_new = np.ones(num_features, dtype=bool)
 
@@ -132,6 +141,11 @@ class QLearningModel:
         assert type(batch_size) is int and batch_size > 0
         assert self.training_mode == False
 
+        self.logger.info(f"Setting up Q-Learning Model for training.")
+        self.logger.info(f"Hyperparameters: alpha = {alpha}, gamma = {gamma}, buffer_size = {buffer_size}")
+        if n > 0:
+            self.logger.info(f"n-step Q-Learning will be used instead of normal Q-Learning. N = {n}")
+
         self.alpha = alpha
         self.gamma = gamma
         self.buffer_size = buffer_size
@@ -151,6 +165,7 @@ class QLearningModel:
             assert type(initial_beta) is np.ndarray
             assert initial_beta.shape == (self.num_actions, self.num_features)
 
+            self.logger.info("Initial values for beta are given. All newly initialized features will be set according to these values.")
             self.beta[:,self.beta_new] = initial_beta[:,self.beta_new]
             self.beta_new[:] = False
 

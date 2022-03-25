@@ -28,7 +28,7 @@ def setup(self):
     :param self: This object is passed to all callbacks and you can set arbitrary values.
     """
     self.epsilon = EPSILON_START
-    self.model = QLearningModel(NUM_FEATURES, len(ACTIONS))
+    self.model = QLearningModel(NUM_FEATURES, len(ACTIONS), logger=self.logger)
 
 
 def act(self, game_state: dict) -> str:
@@ -51,7 +51,13 @@ def act(self, game_state: dict) -> str:
         #action = coin_collector_act(self, game_state)
     else:
         self.logger.debug("Querying model for action.")
-        action = ACTIONS[self.model.predictAction(state_to_features(game_state))]
+
+        # in learning mode, the feature vector for the current state is already computed in 
+        # game_events_occured(), so we don't have to compute it again.
+        if not self.train or not hasattr(self, 'current_features'):
+            self.current_features = state_to_features(game_state)
+
+        action = ACTIONS[self.model.predictAction(self.current_features)]
         self.logger.debug(f"Chose action {action}")
 
     return action

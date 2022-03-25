@@ -1,3 +1,11 @@
+Attempts for improving performance:
+    - using numpy instead of native python structures where possible
+    - vectorization of compute-intensive code
+    - reusing information (e.g., calling state_to_features() only once)
+    - trying to use numba to accelerate and parallelize critical parts of the code
+    - finding optimal hyperparameters by running multiple training processes simultaneously to utilize CPU resources 
+      and unsing multiple devices
+
 Step 00: First tries
     - problem at first: values for beta were exploding
     - attempts:
