@@ -40,7 +40,6 @@ def act(self, game_state: dict) -> str:
     :param game_state: The dictionary that describes everything on the board.
     :return: The action to take as a string.
     """
-    #print(state_to_features(game_state))
 
     # epsilon-greedy policy:
     if self.train and random.random() < self.epsilon:                                  

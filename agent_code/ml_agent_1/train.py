@@ -45,11 +45,11 @@ COIN_DENSITY_U      = 0
 COIN_DENSITY_R      = 1
 COIN_DENSITY_D      = 2
 COIN_DENSITY_L      = 3
-ESCAPE_U  = 4
-ESCAPE_R  = 5
-ESCAPE_D  = 6
-ESCAPE_L  = 7
-ESCAPE_M  = 8
+ESCAPE_U            = 4
+ESCAPE_R            = 5
+ESCAPE_D            = 6
+ESCAPE_L            = 7
+ESCAPE_M            = 8
 
 
 def setup_training(self):
@@ -134,6 +134,7 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     # The feature vector for the new state is used here for the first time, so we have to compute it first.
     # It can then be used by every other function without having to call state_to_features() again.
     self.current_features = state_to_features(new_game_state)
+    #print(self.current_features)
 
     t = Transition(
         old_features,
