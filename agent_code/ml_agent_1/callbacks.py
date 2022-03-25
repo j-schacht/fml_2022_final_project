@@ -40,14 +40,13 @@ def act(self, game_state: dict) -> str:
     :param game_state: The dictionary that describes everything on the board.
     :return: The action to take as a string.
     """
-    #print(state_to_features(game_state))
 
     # epsilon-greedy policy:
     if self.train and random.random() < self.epsilon:                                  
         self.logger.debug("Choosing action purely at random.")
         # 80%: walk in any direction. 10% wait. 10% bomb.
-        #action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])
-        action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .2, .0])
+        action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])
+        #action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .2, .0])
         #action = coin_collector_act(self, game_state)
     else:
         self.logger.debug("Querying model for action.")
