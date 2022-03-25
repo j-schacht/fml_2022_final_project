@@ -138,7 +138,7 @@ class QLearningModel:
         self.batch_size = batch_size
         self.n = n
         self.nn = nn
-        self.gamma_matrix = 0                           #temporary
+        self.gamma_matrix = np.zeros((buffer_size,buffer_size))                           #temporary
 
         # one buffer for each attribute of Transition type
         self.buffer_X = np.zeros((buffer_size, self.num_features))
@@ -284,26 +284,29 @@ class QLearningModel:
             assert self.n > 0
             assert self.nn > 0
 
-            if self.gamma_matrix==0: # create a matrix for nn-step Q-learning
-                GAMMAH = [0] + [self.gamma**i for i in range(self.nn)]
+            if np.max(self.gamma_matrix) == 0: # create a matrix to multiply reward with in nstep Ql
+                gammat = [0] + [self.gamma**(self.nn-1-i) for i in range(self.nn)]
                 for i in range(self.buffer_size-(self.nn+1)):
-                    GAMMAH = GAMMAH + [0 for i in range(self.buffer_size-self.nn+1)] + [self.gamma**i for i in range(self.nn)]
-                GAMMAH = np.asarray(GAMMAH).reshape(self.buffer_size-self.nn,self.buffer_size)
-                bla = np.concatenate((np.zeros((self.nn,self.buffer_size-self.nn)),np.eye(self.nn, dtype='float')),axis=1)
-                self.gamma_matrix = np.concatenate((GAMMAH,bla),axis=0)
+                    gammat = gammat + [0 for i in range(self.buffer_size-self.nn+1)] + [self.gamma**(self.nn-1-i) for i in range(self.nn)]
 
+                gammat = np.asarray(gammat).reshape(self.buffer_size-self.nn,self.buffer_size)
+                bla = np.concatenate((np.eye(self.nn, dtype='float'),np.zeros((self.nn,self.buffer_size-self.nn))),axis=1)
+                self.gamma_matrix = np.concatenate((bla,gammat),axis=0)
 
             X = self.buffer_nextX                   # dim: (buffer_size x num_features)
             nextX = self.buffer_nextX               # dim: (buffer_size x num_features)
             reward = self.buffer_reward             # dim: (buffer_size x 1)
             action = self.buffer_action
 
-            # calculate current guess of Q-function:                        # explanation will follow later
-            maxQ = np.max(np.matmul(nextX, self.beta.T),axis=1)
-            bla1 = np.zeros((self.buffer_size-self.nn,self.nn))
-            bla2 = np.eye((self.buffer_size-self.nn), dtype='float')
-            bla3 = np.zeros((self.nn,self.buffer_size-self.nn))
-            temp = np.concatenate((np.concatenate((bla1,bla2),axis=1),np.concatenate((bla3,np.eye(self.nn)),axis=1)),axis=0)
+            #calculate maxQ
+            maxQ = np.max(np.matmul(nextX, self.beta.T), axis=1)
+
+            # calculate matrix to multiply with current guess of Q-function:
+            bla1 = np.zeros((self.nn,self.buffer_size-self.nn))
+            bla2 = self.gamma**self.nn * np.eye((self.buffer_size-self.nn), dtype='float')
+            bla3 = np.zeros((self.buffer_size-self.nn,self.nn))
+            bla4 = self.gamma * np.eye((self.nn))
+            temp = np.concatenate((np.concatenate((bla4,bla1),axis=1),np.concatenate((bla2,bla3),axis=1)),axis=0)
 
 
             Y = np.matmul(self.gamma_matrix,reward) + np.matmul(temp,maxQ)

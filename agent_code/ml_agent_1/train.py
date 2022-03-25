@@ -56,7 +56,7 @@ def setup_training(self):
     self.nn = NN
     self.counter = 0
     self.counter_nstep = 0
-    #self.gamma_matrix = 0                                                   #temporary
+    self.gamma_matrix = np.zeros((BUFFER_SIZE,BUFFER_SIZE))                                                   #temporary
 
     #self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE, n=self.n, nn=self.nn, initial_beta=INITIAL_BETA)
     self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE, n=self.n, nn=self.nn)
@@ -129,7 +129,7 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     else:
         # n-step q-learning
         if self.counter_nstep % self.n == 1 and self.counter >= BUFFER_SIZE and BUFFER_SIZE <= self.counter_nstep:
-            self.model.nstep_gradientUpdate()
+            self.model.nstep_gradientUpdate() 
             self.counter = self.counter + 1
             self.counter_nstep = self.counter_nstep + 1
         else:
@@ -168,7 +168,7 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
         self.counter_nstep = 0
         # make sure that no information gets lost
         if self.counter >= BUFFER_SIZE:
-            self.model.nstep_gradientUpdate()
+            self.model.gradientUpdate()
     
 
 def reward_from_events(self, events: List[str]) -> int:
