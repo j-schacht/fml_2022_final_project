@@ -292,8 +292,7 @@ class QLearningModel:
                 self.gamma_matrix = np.concatenate((GAMMAH,bla),axis=0)
 
 
-            X = self.buffer_X     ValueError: attempt to get argmax of an empty sequence
-              # dim: (buffer_size x num_features)
+            X = self.buffer_nextX                   # dim: (buffer_size x num_features)
             nextX = self.buffer_nextX               # dim: (buffer_size x num_features)
             reward = self.buffer_reward             # dim: (buffer_size x 1)
             action = self.buffer_action
