@@ -4,7 +4,6 @@ from .callbacks import state_to_features
 from .callbacks import ACTIONS
 from .qlearning import *
 from datetime import datetime
-from enum import Enum
 
 # --- HYPERPARAMETERS ---
 # EPSILON_START is found in callbacks.py
@@ -16,9 +15,9 @@ BUFFER_SIZE         = 50
 BATCH_SIZE          = 25    # TODO: remove ?
 
 # how often updates are made in N-step Q-learning:
-N                   = 20
+N                   = 0
 # the real N in N-step Q-learning:
-NN                  = 10
+NN                  = 6
 
 INITIAL_BETA = np.array([[1,-0.1,-0.1,-0.1],
                         [-0.1, 1,-0.1,-0.1],
@@ -27,7 +26,6 @@ INITIAL_BETA = np.array([[1,-0.1,-0.1,-0.1],
                         [-0.1,-0.1,-0.1,-0.1],
                         [-0.5,-0.5,-0.5,-0.5],
 ])
-
 
 # Measurements
 MEASUREMENT =   True
@@ -112,7 +110,7 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     last_action = ACTIONS.index(self_action)
 
     coindensity = old_features[COIN_DENSITY_U:COIN_DENSITY_L]
-    bombexplcombined = old_features[BOMBEXPL_DENSITY_U:BOMBEXPL_DENSITY_M]
+    #bombexplcombined = old_features[BOMBEXPL_DENSITY_U:BOMBEXPL_DENSITY_M]
     #cratedensity = old_features[featurecounter:featurecounter+4]
     #bombdensity = old_features[featurecounter:featurecounter+5]
     #explosiondensity = old_features[featurecounter:featurecounter+5]
@@ -120,8 +118,8 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     
     if last_action == np.argmax(coindensity) and np.argmax(coindensity) != 0:
         events.append("MOVED_TO_COIN")
-    if last_action == np.argmax(bombexplcombined) and np.argmax(bombexplcombined) != 2: # 2 means no bombs
-        events.append("MOVED_FROM_BOMBEXPL")
+    #if last_action == np.argmax(bombexplcombined) and np.argmax(bombexplcombined) != 2: # 2 means no bombs
+    #    events.append("MOVED_FROM_BOMBEXPL")
     #if last_action == np.argmax(cratedensity) and np.argmax(cratedensity) != 0:
     #    events.append("MOVED_TO_CRATE")
     #if last_action == np.argmax(bombdensity) and np.argmax(bombdensity) != 1:
