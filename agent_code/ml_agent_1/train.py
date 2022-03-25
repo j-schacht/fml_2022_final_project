@@ -86,27 +86,26 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
 
     # Idea: Add your own events to hand out rewards
     old_features = state_to_features(old_game_state)
-    ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
     featurecounter = 0
     coindensity = old_features[featurecounter:featurecounter+4]
     featurecounter += 4
-    cratedensity = old_features[featurecounter:featurecounter+4]
-    featurecounter += 4
+    #cratedensity = old_features[featurecounter:featurecounter+4]
+    #featurecounter += 4
     #bombdensity = old_features[featurecounter:featurecounter+5]
     #featurecounter += 5
     #explosiondensity = old_features[featurecounter:featurecounter+5]
     #featurecounter += 5
     bombexplcombined = old_features[featurecounter:featurecounter+5]
-    featurecounter += 5
+    #featurecounter += 5
     if ACTIONS.index(self_action) == np.argmax(coindensity) and np.argmax(coindensity) != 0:
         events.append("MOVED_TO_COIN")
-    if ACTIONS.index(self_action) == np.argmax(cratedensity) and np.argmax(cratedensity) != 0:
-        events.append("MOVED_TO_CRATE")
+    #if ACTIONS.index(self_action) == np.argmax(cratedensity) and np.argmax(cratedensity) != 0:
+    #    events.append("MOVED_TO_CRATE")
     #if ACTIONS.index(self_action) == np.argmax(bombdensity) and np.argmax(bombdensity) != 1:
     #    events.append("MOVED_FROM_BOMB")
     #if ACTIONS.index(self_action) == np.argmax(explosiondensity) and np.argmax(explosiondensity) != 1:
     #    events.append("MOVED_FROM_EXPLOSION")
-    if ACTIONS.index(self_action) == np.argmax(bombexplcombined) and np.argmax(bombexplcombined) != 2:
+    if ACTIONS.index(self_action) == np.argmax(bombexplcombined) and np.argmax(bombexplcombined) != 2: # TODO: Why?
         events.append("MOVED_FROM_BOMBEXPL")
     
     # state_to_features is defined in callbacks.py
@@ -167,7 +166,6 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
             self.model.gradientUpdate()
     
 
-
 def reward_from_events(self, events: List[str]) -> int:
     
     game_rewards = {
@@ -178,7 +176,7 @@ def reward_from_events(self, events: List[str]) -> int:
         e.WAITED: -6,
         e.INVALID_ACTION: -10,
 
-        e.BOMB_DROPPED: -15,
+        e.BOMB_DROPPED: -30,
         e.BOMB_EXPLODED: 0,
 
         e.CRATE_DESTROYED: 10,
@@ -189,7 +187,7 @@ def reward_from_events(self, events: List[str]) -> int:
         e.KILLED_SELF: -100,
         e.GOT_KILLED: -100,
         e.OPPONENT_ELIMINATED: 0,
-        e.SURVIVED_ROUND: 60,
+        e.SURVIVED_ROUND: 100,
 
         MOVED_TO_COIN: 2,
         MOVED_TO_CRATE: 1,
