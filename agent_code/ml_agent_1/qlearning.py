@@ -275,50 +275,50 @@ class QLearningModel:
         #print(self.beta)
 
 
-def nstep_gradientUpdate(self):
-        '''
-        This function performs the gradient step of the Q-function in n-step TD Q-learning.
-        '''
-        
-        assert self.training_mode == True
-        assert type(self.buffer_size) is int
-        assert type(self.n) is int
-        assert self.n > 0
+    def nstep_gradientUpdate(self):
+            '''
+            This function performs the gradient step of the Q-function in n-step TD Q-learning.
+            '''
+            
+            assert self.training_mode == True
+            assert type(self.buffer_size) is int
+            assert type(self.n) is int
+            assert self.n > 0
 
-        X = self.buffer_X                   # dim: (buffer_size x num_features)
-        nextX = self.buffer_nextX               # dim: (buffer_size x num_features)
-        reward = self.buffer_reward             # dim: (buffer_size x 1)
-        action = self.buffer_action
+            X = self.buffer_X                   # dim: (buffer_size x num_features)
+            nextX = self.buffer_nextX               # dim: (buffer_size x num_features)
+            reward = self.buffer_reward             # dim: (buffer_size x 1)
+            action = self.buffer_action
 
-        # calculate current guess of Q-function:                        # explanation will follow later
-        maxQ = np.max(np.matmul(nextX, self.beta.T),axis=1)
-        bla1 = np.zeros((self.buffer_size-self.nn,self.nn))
-        bla2 = np.eye((self.buffer_size-self.nn), dtype='float')
-        bla3 = np.zeros((nu,self.buffer_size-self.nn))
-        temp = np.concatenate((np.concatenate((bla1,bla2),axis=1),np.concatenate((bla3,np.eye(self.nn)),axis=1)),axis=0)
+            # calculate current guess of Q-function:                        # explanation will follow later
+            maxQ = np.max(np.matmul(nextX, self.beta.T),axis=1)
+            bla1 = np.zeros((self.buffer_size-self.nn,self.nn))
+            bla2 = np.eye((self.buffer_size-self.nn), dtype='float')
+            bla3 = np.zeros((nu,self.buffer_size-self.nn))
+            temp = np.concatenate((np.concatenate((bla1,bla2),axis=1),np.concatenate((bla3,np.eye(self.nn)),axis=1)),axis=0)
 
-        # create a matrix GAMMAH for nn-step Q-learning
-        GAMMAH = [0] + [self.gamma**i for i in range(self.nn)]
-        for i in range(self.buffer_size-(self.nn+1)):
-            GAMMAH = GAMMAH + [0 for i in range(self.buffer_size-self.nn+1)] + [self.gamma**i for i in range(self.nn)]
-        GAMMAH = np.asarray(GAMMAH).reshape(self.buffer_size-self.nn,self.buffer_size)
-        bla = np.concatenate((np.zeros((self.nn,self.buffer_size-self.nn)),np.eye(self.nn, dtype='float')),axis=1)
-        GAMMAH = np.concatenate((GAMMAH,bla),axis=0)
+            # create a matrix GAMMAH for nn-step Q-learning
+            GAMMAH = [0] + [self.gamma**i for i in range(self.nn)]
+            for i in range(self.buffer_size-(self.nn+1)):
+                GAMMAH = GAMMAH + [0 for i in range(self.buffer_size-self.nn+1)] + [self.gamma**i for i in range(self.nn)]
+            GAMMAH = np.asarray(GAMMAH).reshape(self.buffer_size-self.nn,self.buffer_size)
+            bla = np.concatenate((np.zeros((self.nn,self.buffer_size-self.nn)),np.eye(self.nn, dtype='float')),axis=1)
+            GAMMAH = np.concatenate((GAMMAH,bla),axis=0)
 
 
-        Y = np.matmul(GAMMAH,reward) + np.matmul(temp,maxQ)
+            Y = np.matmul(GAMMAH,reward) + np.matmul(temp,maxQ)
 
-        # generate the batch of actions for each beta-vector
-        sel = np.zeros((self.num_actions), dtype=np.ndarray)
-        for i in range(self.num_actions):
-            sel[i] = np.where(action == i)[0]
+            # generate the batch of actions for each beta-vector
+            sel = np.zeros((self.num_actions), dtype=np.ndarray)
+            for i in range(self.num_actions):
+                sel[i] = np.where(action == i)[0]
 
-        # calculate the new beta-vectors as in gradientUpdate:
-        for i in range(self.num_actions):
-            if sel[i].size > 0:
-                self.beta[i] = self.beta[i] + (self.alpha / sel[i].size) * np.sum((X[sel[i]].T * (Y[sel[i]] - np.matmul(X[sel[i]], self.beta[i]))).T, axis=0)
+            # calculate the new beta-vectors as in gradientUpdate:
+            for i in range(self.num_actions):
+                if sel[i].size > 0:
+                    self.beta[i] = self.beta[i] + (self.alpha / sel[i].size) * np.sum((X[sel[i]].T * (Y[sel[i]] - np.matmul(X[sel[i]], self.beta[i]))).T, axis=0)
 
-    
+
     def Q(self, X, a):
         """
         This is the action value function. It returns a value for a given combination of a 1D feature vector and 
