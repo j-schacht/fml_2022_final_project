@@ -138,6 +138,7 @@ class QLearningModel:
         self.batch_size = batch_size
         self.n = n
         self.nn = nn
+        self.gamma_matrix = 0                           #temporary
 
         # one buffer for each attribute of Transition type
         self.buffer_X = np.zeros((buffer_size, self.num_features))
