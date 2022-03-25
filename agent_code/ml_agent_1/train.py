@@ -4,7 +4,6 @@ from .callbacks import state_to_features
 from .callbacks import ACTIONS
 from .qlearning import *
 from datetime import datetime
-from enum import Enum
 
 # --- HYPERPARAMETERS ---
 # EPSILON_START is found in callbacks.py
@@ -16,9 +15,9 @@ BUFFER_SIZE         = 50
 BATCH_SIZE          = 25    # TODO: remove ?
 
 # how often updates are made in N-step Q-learning:
-N                   = 20
+N                   = 0
 # the real N in N-step Q-learning:
-NN                  = 10
+NN                  = 6
 
 INITIAL_BETA = np.array([[1,-0.1,-0.1,-0.1],
                         [-0.1, 1,-0.1,-0.1],
@@ -27,7 +26,6 @@ INITIAL_BETA = np.array([[1,-0.1,-0.1,-0.1],
                         [-0.1,-0.1,-0.1,-0.1],
                         [-0.5,-0.5,-0.5,-0.5],
 ])
-
 
 # Measurements
 MEASUREMENT =   True
