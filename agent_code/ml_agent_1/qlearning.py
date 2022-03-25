@@ -294,7 +294,7 @@ class QLearningModel:
             maxQ = np.max(np.matmul(nextX, self.beta.T),axis=1)
             bla1 = np.zeros((self.buffer_size-self.nn,self.nn))
             bla2 = np.eye((self.buffer_size-self.nn), dtype='float')
-            bla3 = np.zeros((nu,self.buffer_size-self.nn))
+            bla3 = np.zeros((self.nn,self.buffer_size-self.nn))
             temp = np.concatenate((np.concatenate((bla1,bla2),axis=1),np.concatenate((bla3,np.eye(self.nn)),axis=1)),axis=0)
 
             # create a matrix GAMMAH for nn-step Q-learning
