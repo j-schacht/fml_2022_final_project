@@ -135,8 +135,8 @@ def state_to_features(game_state: dict) -> np.array:
     features['coindensity'] = neighborvalues(ownpos, coindensmap)
     features['coindensity'].pop(4) # the own position does not contain coins
     '''
-    cratedensmap = densitymap(cratesmap, notwallsmap, crossmatrix, weight = 0.2, exponent = 1, iterations = 5)
-    features['cratedensity'] = neighborvalues(ownpos, coindensmap)
+    cratedensmap = densitymap(cratesmap, notwallsmap, crossmatrix, weight = 0.3, exponent = 1, iterations = 5)
+    features['cratedensity'] = neighborvalues(ownpos, cratedensmap*freefield)
     features['cratedensity'].pop(4) # the own position does not contain crates
     '''
     dangermap = dangerzones(bombsmapcounter, notwallsmap, crossmatrix, uppermatrix)
