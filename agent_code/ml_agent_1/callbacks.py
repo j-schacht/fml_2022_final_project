@@ -102,7 +102,11 @@ def state_to_features(game_state: dict) -> np.array:
 
     bombsmap = np.zeros((cols,rows))
     for bomb in bombs:
-        bombsmap[bomb[0][0]][bomb[0][1]] = 4-bomb[1]
+        bombsmap[bomb[0][0]][bomb[0][1]] = 1
+
+    bombsmapcounter = np.zeros((cols,rows))
+    for bomb in bombs:
+        bombsmapcounter[bomb[0][0]][bomb[0][1]] = 4-bomb[1]
 
     wallsmap = (abs(field)-field)*0.5
     notwallsmap = -wallsmap+1
@@ -134,12 +138,12 @@ def state_to_features(game_state: dict) -> np.array:
     features['cratedensity'] = neighborvalues(ownpos, coindensmap)
     features['cratedensity'].pop(4) # the own position does not contain crates
     '''
-    dangermap = dangerzones(bombsmap, notwallsmap, crossmatrix, uppermatrix)
+    dangermap = dangerzones(bombsmapcounter, notwallsmap, crossmatrix, uppermatrix)
     if sum(neighborvalues(ownpos, dangermap)) != 0 or np.sum(explosionmap) != 0:
         spacemap = densitymap(freefield, freefield, crossmatrix, weight = 0.5, exponent = 1, iterations = 3)
         escapemap = spacemap - dangermap
         escapemap = escapemap - np.min(escapemap)
-        escapemap = escapemap/np.max(escapemap)*(np.ones((cols,rows)) - explosionmap)
+        escapemap = escapemap/np.max(escapemap)*(np.ones((cols,rows)) - explosionmap)*freefield
         features['escape'] = neighborvalues(ownpos, escapemap)
     else:
         features['escape'] = [0]*5
@@ -284,17 +288,17 @@ def find_blastables(ownmap, blastablesmap, notwallsmap, crossmatrix, uppermatrix
         blastablesmap = np.rot90(blastablesmap)
     return blastables
 
-def dangerzones(bombsmap, notwallsmap, crossmatrix, uppermatrix):
-    dangerzone = np.zeros((bombsmap.shape[0],bombsmap.shape[1]))
+def dangerzones(bombsmapcounter, notwallsmap, crossmatrix, uppermatrix):
+    dangerzone = np.zeros((bombsmapcounter.shape[0],bombsmapcounter.shape[1]))
     for i in range(4):
-        blastmap = bombsmap.copy()
+        blastmap = bombsmapcounter.copy()
         for j in range(3):
             blastmap = np.matmul(uppermatrix,blastmap)*notwallsmap
             dangerzone = dangerzone + blastmap*(3-j)
-        bombsmap = np.rot90(bombsmap)
+        bombsmapcounter = np.rot90(bombsmapcounter)
         notwallsmap = np.rot90(notwallsmap)
         dangerzone = np.rot90(dangerzone)
-    dangerzone = dangerzone + bombsmap*4
+    dangerzone = dangerzone + bombsmapcounter*4
     return dangerzone
 
 def features_dict_to_array(features, usedfeatures):
