@@ -56,7 +56,8 @@ def setup_training(self):
     self.nn = NN
     self.counter = 0
     self.counter_nstep = 0
-
+    self.gamma_matrix = 0                                                   #temporary
+    
     #self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE, n=self.n, nn=self.nn, initial_beta=INITIAL_BETA)
     self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE, n=self.n, nn=self.nn)
 

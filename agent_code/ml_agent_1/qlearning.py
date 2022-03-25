@@ -283,7 +283,7 @@ class QLearningModel:
             assert self.n > 0
             assert self.nn > 0
 
-            if not exists(self.gamma_matrix): # create a matrix for nn-step Q-learning
+            if self.gamma_matrix==0: # create a matrix for nn-step Q-learning
                 GAMMAH = [0] + [self.gamma**i for i in range(self.nn)]
                 for i in range(self.buffer_size-(self.nn+1)):
                     GAMMAH = GAMMAH + [0 for i in range(self.buffer_size-self.nn+1)] + [self.gamma**i for i in range(self.nn)]
@@ -292,7 +292,8 @@ class QLearningModel:
                 self.gamma_matrix = np.concatenate((GAMMAH,bla),axis=0)
 
 
-            X = self.buffer_X                   # dim: (buffer_size x num_features)
+            X = self.buffer_X     ValueError: attempt to get argmax of an empty sequence
+              # dim: (buffer_size x num_features)
             nextX = self.buffer_nextX               # dim: (buffer_size x num_features)
             reward = self.buffer_reward             # dim: (buffer_size x 1)
             action = self.buffer_action
