@@ -15,8 +15,10 @@ GAMMA               = 0.6
 BUFFER_SIZE         = 50
 BATCH_SIZE          = 25    # TODO: remove ?
 
-# step size for n-step q-learning (set to zero to use normal q-learning)
+# how often updates are made in N-step Q-learning:
 N                   = 20
+# the real N in N-step Q-learning:
+NN                  = 5
 
 INITIAL_BETA = np.array([[1,-0.1,-0.1,-0.1],
                         [-0.1, 1,-0.1,-0.1],
@@ -25,6 +27,7 @@ INITIAL_BETA = np.array([[1,-0.1,-0.1,-0.1],
                         [-0.1,-0.1,-0.1,-0.1],
                         [-0.5,-0.5,-0.5,-0.5],
 ])
+
 
 # Measurements
 MEASUREMENT =   True
@@ -50,11 +53,12 @@ def setup_training(self):
     self.batch_size = BATCH_SIZE
 
     self.n = N
+    self.nn = NN
     self.counter = 0
     self.counter_nstep = 0
 
     #self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE, n=self.n, initial_beta=INITIAL_BETA)
-    self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE, n=self.n)
+    self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE, n=self.n,nn=self.nn)
 
     # file name for measurements 
     if MEASUREMENT: # TODO: epsilon decreasing!
