@@ -38,6 +38,7 @@ MOVED_TO_CRATE = 'MOVED_TO_CRATE'
 MOVED_FROM_BOMB = 'MOVED_FROM_BOMB'
 MOVED_FROM_EXPLOSION = 'MOVED_FROM_EXPLOSION'
 MOVED_FROM_BOMBEXPL = 'MOVED_FROM_BOMBEXPL'
+PLACED_BOMB_WELL = 'PLACED_BOMB_WELL'
 
 def setup_training(self):
     """
@@ -101,7 +102,10 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     #explosiondensity = old_features[featurecounter:featurecounter+5]
     #featurecounter += 5
     bombexplcombined = old_features[featurecounter:featurecounter+5]
-    #featurecounter += 5
+    featurecounter += 5
+    #cornersandblast = old_features[featurecounter]
+    #featurecounter += 1
+    
     if ACTIONS.index(self_action) == np.argmax(coindensity) and np.argmax(coindensity) != 0:
         events.append("MOVED_TO_COIN")
     #if ACTIONS.index(self_action) == np.argmax(cratedensity) and np.argmax(cratedensity) != 0:
@@ -110,8 +114,12 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     #    events.append("MOVED_FROM_BOMB")
     #if ACTIONS.index(self_action) == np.argmax(explosiondensity) and np.argmax(explosiondensity) != 1:
     #    events.append("MOVED_FROM_EXPLOSION")
+
     #if ACTIONS.index(self_action) == np.argmax(bombexplcombined) and np.argmax(bombexplcombined) != 2: # TODO: Why?
     #    events.append("MOVED_FROM_BOMBEXPL")
+    #if self_action == 'BOMB' and cornersandblast >= 1.0:
+    #    events.append("PLACED_BOMB_WELL")
+
     
     # state_to_features is defined in callbacks.py
     t = Transition(
@@ -181,7 +189,7 @@ def reward_from_events(self, events: List[str]) -> int:
         e.WAITED: -6,
         e.INVALID_ACTION: -10,
 
-        e.BOMB_DROPPED: -30,
+        e.BOMB_DROPPED: -15,
         e.BOMB_EXPLODED: 0,
 
         e.CRATE_DESTROYED: 10,
@@ -198,7 +206,8 @@ def reward_from_events(self, events: List[str]) -> int:
         MOVED_TO_CRATE: 1,
         #MOVED_FROM_BOMB: 4,
         #MOVED_FROM_EXPLOSION: 4,
-        MOVED_FROM_BOMBEXPL: 5
+        MOVED_FROM_BOMBEXPL: 5,
+        PLACED_BOMB_WELL: 17
     }
 
     reward_sum = 0
