@@ -122,7 +122,7 @@ class QLearningModel:
             self.beta_new = np.ones(num_features, dtype=bool)
 
 
-    def setupTraining(self, alpha, gamma, buffer_size, batch_size, n=0, nn=0, initial_beta=None):
+    def setupTraining(self, alpha, gamma, buffer_size, batch_size, n=0, initial_beta=None):
         """
         This function sets up everything needed to train the model. It needs to be called only
         if the model is to be trained.
@@ -151,8 +151,8 @@ class QLearningModel:
         self.buffer_size = buffer_size
         self.batch_size = batch_size
         self.n = n
-        self.nn = nn    # TODO: add this attribute to comments
-        self.gamma_matrix = np.zeros((buffer_size,buffer_size))                           #temporary
+        #self.nn = nn                                                                      # TODO: remove/replace this parameter everywhere
+        self.gamma_matrix = np.zeros((buffer_size,buffer_size))                            #temporary ?
 
         # one buffer for each attribute of Transition type
         self.buffer_X = np.zeros((buffer_size, self.num_features))
@@ -295,17 +295,18 @@ class QLearningModel:
             
             assert self.training_mode == True
             assert type(self.buffer_size) is int
+            assert self.buffer_size > self.n
             assert type(self.n) is int
             assert self.n > 0
-            assert self.nn > 0
+            #assert self.nn > 0
 
             if np.max(self.gamma_matrix) == 0: # create a matrix to multiply reward with in nstep Ql
-                gammat = [0] + [self.gamma**(self.nn-1-i) for i in range(self.nn)]
-                for i in range(self.buffer_size-(self.nn+1)):
-                    gammat = gammat + [0 for i in range(self.buffer_size-self.nn+1)] + [self.gamma**(self.nn-1-i) for i in range(self.nn)]
+                gammat = [0] + [self.gamma**(self.n-1-i) for i in range(self.n)]
+                for i in range(self.buffer_size-(self.n+1)):
+                    gammat = gammat + [0 for i in range(self.buffer_size-self.n+1)] + [self.gamma**(self.n-1-i) for i in range(self.n)]
 
-                gammat = np.asarray(gammat).reshape(self.buffer_size-self.nn,self.buffer_size)
-                bla = np.concatenate((np.eye(self.nn, dtype='float'),np.zeros((self.nn,self.buffer_size-self.nn))),axis=1)
+                gammat = np.asarray(gammat).reshape(self.buffer_size-self.n,self.buffer_size)
+                bla = np.concatenate((np.eye(self.n, dtype='float'),np.zeros((self.n,self.buffer_size-self.n))),axis=1)
                 self.gamma_matrix = np.concatenate((bla,gammat),axis=0)
 
             X = self.buffer_nextX                   # dim: (buffer_size x num_features)
@@ -317,10 +318,10 @@ class QLearningModel:
             maxQ = np.max(np.matmul(nextX, self.beta.T), axis=1)
 
             # calculate matrix to multiply with current guess of Q-function:
-            bla1 = np.zeros((self.nn,self.buffer_size-self.nn))
-            bla2 = self.gamma**self.nn * np.eye((self.buffer_size-self.nn), dtype='float')
-            bla3 = np.zeros((self.buffer_size-self.nn,self.nn))
-            bla4 = self.gamma * np.eye((self.nn))
+            bla1 = np.zeros((self.n,self.buffer_size-self.n))
+            bla2 = self.gamma**self.n * np.eye((self.buffer_size-self.n), dtype='float')
+            bla3 = np.zeros((self.buffer_size-self.n,self.n))
+            bla4 = self.gamma * np.eye((self.n))
             temp = np.concatenate((np.concatenate((bla4,bla1),axis=1),np.concatenate((bla2,bla3),axis=1)),axis=0)
 
 
