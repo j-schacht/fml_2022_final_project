@@ -9,7 +9,7 @@ from agent_code.coin_collector_agent.callbacks import act as coin_collector_act
 EPSILON_START = 1.0
 
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
-NUM_FEATURES = 9
+NUM_FEATURES = 14
 
 """
 TODO
@@ -158,8 +158,11 @@ def state_to_features(game_state: dict) -> np.array:
     #print(features['blastables'])
 
     # feature to determine wether a bomb should be dropped
-    freecorners = sum(features['freecorners'])
-    features['cornersandblast'] = [sum(features['blastables'])*freecorners/(freecorners+1)]
+    if game_state['self'][2]:
+        freecorners = sum(features['freecorners'])
+        features['cornersandblast'] = [sum(features['blastables'])*freecorners/(freecorners+1)]
+    else:
+        features['cornersandblast'] = [0]
     '''
     #if freecorners+2 == 0: # TODO: Solve divide by 0 issue
           #print(features['freecorners']) 
@@ -228,8 +231,8 @@ def state_to_features(game_state: dict) -> np.array:
     # cornersandblast:1
     #usedfeatures = ['freedomdensity','coindensity','freecorners','blastables','closest_coin_distance','closest_3_coins_distance']
     #usedfeatures = ['coindensity','cratedensity','bombexplcombined','cornersandblast']
-    #usedfeatures = ['coindensity', 'escape', 'cratedensity', 'cornersandblast']
-    usedfeatures = ['coindensity', 'escape']
+    usedfeatures = ['coindensity', 'escape', 'cratedensity', 'cornersandblast']
+    #usedfeatures = ['coindensity', 'escape']
     featurearray = features_dict_to_array(features, usedfeatures)
     return featurearray
 
