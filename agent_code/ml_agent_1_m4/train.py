@@ -2,18 +2,56 @@ from typing import List
 import events as e
 from .callbacks import state_to_features
 from .callbacks import ACTIONS
+from .callbacks import Feature as F
 from .qlearning import *
 from datetime import datetime
 
-# Hyper parameters 
-ALPHA =         0.0001
-GAMMA =         0.6
-BUFFER_SIZE =   50
-BATCH_SIZE =    25
-# epsilon is found in callbacks.py
+# --- HYPERPARAMETERS ---
+# EPSILON_START is found in callbacks.py
+EPSILON_DECREASE    = 0.9995
+EPSILON_MIN         = 0.1
+ALPHA               = 0.0001
+GAMMA               = 0.6
+BUFFER_SIZE         = 50
+
+# the N in N-step Q-learning
+N                   = 0
+
+# this array can be filled with a initial guess for beta, such that the model converges faster
+INITIAL_BETA = np.array(
+    [[1,-0.1,-0.1,-0.1],
+    [-0.1, 1,-0.1,-0.1],
+    [-0.1,-0.1,1,-0.1],
+    [-0.1,-0.1,-0.1,1],
+    [-0.1,-0.1,-0.1,-0.1],
+    [-0.5,-0.5,-0.5,-0.5],
+])
+
+# Turn output of measurement file on or off
+MEASUREMENT = True
 
 # Events
-PLACEHOLDER_EVENT = "PLACEHOLDER"
+MOVED_TO_COIN = 'MOVED_TO_COIN'
+MOVED_TO_CRATE = 'MOVED_TO_CRATE'
+MOVED_FROM_CRATE = 'MOVED_FROM_CRATE'
+MOVED_FROM_BOMBEXPL = 'MOVED_FROM_BOMBEXPL'
+MOVED_TO_BOMBEXPL = 'MOVED_TO_BOMBEXPL'
+PLACED_BOMB_WELL = 'PLACED_BOMB_WELL'
+
+COIN_DENSITY_U      = 0
+COIN_DENSITY_R      = 1
+COIN_DENSITY_D      = 2
+COIN_DENSITY_L      = 3
+ESCAPE_U            = 4
+ESCAPE_R            = 5
+ESCAPE_D            = 6
+ESCAPE_L            = 7
+ESCAPE_M            = 8
+CRATE_DENSITY_U     = 9
+CRATE_DENSITY_R     = 10
+CRATE_DENSITY_D     = 11
+CRATE_DENSITY_L     = 12
+CORNERS_AND_BLAST   = 13
 
 
 def setup_training(self):
@@ -24,20 +62,24 @@ def setup_training(self):
 
     :param self: This object is passed to all callbacks and you can set arbitrary values.
     """
+    # set hyperparameters
     self.alpha = ALPHA
     self.gamma = GAMMA
     self.buffer_size = BUFFER_SIZE
-    self.batch_size = BATCH_SIZE
 
-    self.n = 3
+    # setup counters
+    self.n = N
     self.counter = 0
-    self.counter_nstep = 0
+    self.buffer_counter = 0
+    self.counter_rewards = 0
 
-    self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE)
+    #self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, n=self.n, initial_beta=INITIAL_BETA)
+    self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, n=self.n)
 
-    # file name for measurements
-    date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    self.measurement_file = f"measurement_{date_time}_{str(self.epsilon)}_{str(ALPHA)}_{str(GAMMA)}_{str(BATCH_SIZE)}_{str(BUFFER_SIZE)}.csv"
+    # file name for measurements 
+    if MEASUREMENT:
+        date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.measurement_file = f"measurement_{date_time}_{str(self.epsilon)}_{str(EPSILON_DECREASE)}_{str(EPSILON_MIN)}_{str(ALPHA)}_{str(GAMMA)}_{str(BUFFER_SIZE)}_{str(N)}_{str(self.model.num_features)}.csv"
 
     
 def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_state: dict, events: List[str]):
@@ -57,42 +99,78 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     :param new_game_state: The state the agent is in now.
     :param events: The events that occurred when going from  `old_game_state` to `new_game_state`
     """
+    # for the gradient update, we need both old_game_state and new_game_state not to be None
     if not old_game_state or not new_game_state:
         return
 
     self.logger.debug(f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}')
 
     # Idea: Add your own events to hand out rewards
-    #if ...:
-    #    events.append(PLACEHOLDER_EVENT)
+
+    # calculate feature vector for old_game_state if not already calculated
+    if not hasattr(self, 'current_features'):
+        self.current_features = state_to_features(old_game_state)
+
+    old_features = self.current_features
+    last_action = ACTIONS.index(self_action)
+
+    coindensity = old_features[COIN_DENSITY_U:COIN_DENSITY_L]
+    escape = old_features[ESCAPE_U:ESCAPE_M]
+    cratedensity = old_features[CRATE_DENSITY_U:CRATE_DENSITY_L]
+    cornersandblast = old_features[CORNERS_AND_BLAST]
+    
+    # define custom events 
+    if last_action == np.argmax(coindensity) and np.argmax(coindensity) != 0:
+        events.append("MOVED_TO_COIN")
+
+    if last_action == np.argmax(escape) and np.argmax(escape) != 0: # 0 means no bombs
+        events.append("MOVED_FROM_BOMBEXPL")
+
+    if last_action != np.argmax(escape) and np.argmax(escape) != 0: # 0 means no bombs
+        events.append("MOVED_TO_BOMBEXPL")
+
+    if last_action == np.argmax(cratedensity) and np.argmax(cratedensity) != 0:
+        events.append("MOVED_TO_CRATE")
+
+    if last_action != np.argmax(cratedensity) and np.argmax(cratedensity) != 0:
+        events.append("MOVED_FROM_CRATE")
+
+    if self_action == 'BOMB' and cornersandblast >= 1.0:
+        events.append("PLACED_BOMB_WELL")
+
+    # calculate reward
+    reward = reward_from_events(self, events)
+    self.counter_rewards = self.counter_rewards + reward
 
     # state_to_features is defined in callbacks.py
-    t = Transition(
-        state_to_features(old_game_state),
-        ACTIONS.index(self_action),
-        state_to_features(new_game_state),
-        reward_from_events(self, events)
-    )
+    # The feature vector for the new state is used here for the first time, so we have to compute it first.
+    # It can then be used by every other function without having to call state_to_features() again.
+    self.current_features = state_to_features(new_game_state)
 
+    # push the current transition to the buffer of the q-learning model
+    t = Transition(
+        old_features,
+        ACTIONS.index(self_action),
+        self.current_features,
+        reward
+    )
+    
     self.model.bufferAddTransition(t)
 
-    if self.counter >= BUFFER_SIZE:
-        self.model.gradientUpdate()
-        self.counter = self.counter + 1
-    else:
-        self.counter = self.counter + 1
+    # do gradient update in q-learning model
+    if self.n == 0:         # Q-learning 
+        if self.buffer_counter == self.buffer_size:
+            self.model.gradientUpdate()
+            self.buffer_counter = 0
+        else :
+            self.buffer_counter += 1
+    else:                   # n-step Q-learning
+        if self.buffer_counter == (self.buffer_size - self.n):
+            self.model.nstep_gradientUpdate()
+            self.buffer_counter = 0
+        else :
+            self.buffer_counter += 1
 
-    # the following if-else statement replaces the above statement in the case of n_step TD Q-learning
-    '''
-    if self.counter_nstep % self.n == 1 and self.counter>= BUFFER_SIZE and BUFFER_SIZE <= self.counter_nstep:
-        self.model.nstep_gradientUpdate()
-        self.counter = self.counter + 1
-        self.counter_nstep = self.counter_nstep + 1
-    else:
-        self.counter = self.counter + 1
-        self.counter_nstep = self.counter_nstep + 1
-    '''
-    
 
 def end_of_round(self, last_game_state: dict, last_action: str, events: List[str]):
     """
@@ -109,43 +187,61 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     """
     # store the model
     self.model.saveModel()
-    self.counter_nstep = 0
+
+    # decrease epsilon
+    if self.epsilon * EPSILON_DECREASE >= EPSILON_MIN:
+        self.epsilon = self.epsilon * EPSILON_DECREASE
 
     # store measurement results
-    file = open(self.measurement_file, 'a')
-    file.write(f"{str(last_game_state['round'])},{str(last_game_state['self'][1])},{str(last_game_state['step'])}\n")
-    file.close()
+    if MEASUREMENT:
+        file = open(self.measurement_file, 'a')
+        file.write(f"{str(last_game_state['round'])},{str(last_game_state['self'][1])},{str(last_game_state['step'])},{str(self.counter_rewards)}\n")
+        file.close()
 
-    # activate the next lines in case of n-step Q-learning, such that no information gets lost
-    '''
-    if self.counter >= BUFFER_SIZE:
-        self.model.gradientUpdate()
-    '''
+    # reset reward counter
+    self.counter_rewards = 0
+
+    if self.n == 0 :    # Q-learning
+        self.model.gradientUpdate() 
+        self.buffer_counter = 0
+    else :              # n-step Q-learning
+        if self.model.buffer_counter >= self.buffer_size:
+            self.model.nstep_gradientUpdate()
+            self.buffer_counter = 0
+        else :
+            self.model.gradientUpdate()
+            self.buffer_counter = 0
 
 
 def reward_from_events(self, events: List[str]) -> int:
     
     game_rewards = {
-        e.MOVED_LEFT: -1,
-        e.MOVED_RIGHT: -1,
-        e.MOVED_UP: -1,
-        e.MOVED_DOWN: -1,
-        e.WAITED: -3,
-        e.INVALID_ACTION: -30,
+        e.MOVED_LEFT: -2,
+        e.MOVED_RIGHT: -2,
+        e.MOVED_UP: -2,
+        e.MOVED_DOWN: -2,
+        e.WAITED: -4,
+        e.INVALID_ACTION: -10,
 
-        e.BOMB_DROPPED: -50,
+        e.BOMB_DROPPED: -15,
         e.BOMB_EXPLODED: 0,
 
         e.CRATE_DESTROYED: 5,
         e.COIN_FOUND: 0,
         e.COIN_COLLECTED: 10,
 
-        e.KILLED_OPPONENT: 50,
-        e.KILLED_SELF: -50,
-        e.GOT_KILLED: -50,
+        e.KILLED_OPPONENT: 100,
+        e.KILLED_SELF: -100,
+        e.GOT_KILLED: -100,
         e.OPPONENT_ELIMINATED: 0,
-        e.SURVIVED_ROUND: 30,
-        #PLACEHOLDER_EVENT: -.1  
+        e.SURVIVED_ROUND: 100,
+
+        MOVED_TO_COIN: 4,
+        MOVED_TO_CRATE: 1,
+        MOVED_FROM_CRATE: -1,
+        MOVED_FROM_BOMBEXPL: 20,
+        MOVED_TO_BOMBEXPL: -20,
+        PLACED_BOMB_WELL: 16
     }
 
     reward_sum = 0

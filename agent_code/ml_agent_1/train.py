@@ -17,7 +17,6 @@ BUFFER_SIZE         = 50
 # the N in N-step Q-learning
 N                   = 0
 
-
 # this array can be filled with a initial guess for beta, such that the model converges faster
 INITIAL_BETA = np.array(
     [[1,-0.1,-0.1,-0.1],
