@@ -162,10 +162,13 @@ def state_to_features(game_state: dict) -> np.array:
     features['blastables'] = find_blastables(ownposmap, blastablesmap, notwallsmap, crossmatrix, uppermatrix)
 
     # feature to determine wether a bomb should be dropped
-    freecorners = sum(features['freecorners'])
-    features['cornersandblast'] = [sum(features['blastables'])*freecorners/(freecorners+1)]
+    if game_state['self'][2]:
+        freecorners = sum(features['freecorners'])
+        features['cornersandblast'] = [sum(features['blastables'])*freecorners/(freecorners+1)]
+    else:
+        features['cornersandblast'] = [0]
     
-    '''    
+    '''
     # calculate distance to the closest coin using graph algorithms
     if len(coins) > 0:
         cols = field.shape[0] # x
