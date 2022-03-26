@@ -44,11 +44,6 @@ class QLearningModel:
         size of the experience buffer (= number of transitions to remember & consider).
         (hyperparameter)
 
-    attribute: batch_size
-        size of the random samples taken from the experience buffer to do the gradient update.
-        this must be smaller than buffer_size.
-        (hyperparameter)
-
     attribute: buffer_X, buffer_nextX, buffer_action, buffer_reward
         these are the experience buffers storing the four attributes of transitions. 
         size is given by buffer_size.
@@ -123,6 +118,7 @@ class QLearningModel:
 
 
     def setupTraining(self, alpha, gamma, buffer_size, batch_size, n=0, initial_beta=None):
+
         """
         This function sets up everything needed to train the model. It needs to be called only
         if the model is to be trained.
@@ -131,14 +127,13 @@ class QLearningModel:
         :param alpha: training rate [0.0 <= alpha <= 1.0] [float]
         :param gamma: discount factor [0.0 <= gamma <= 1.0] [float]
         :param buffer_size: size of the experience buffer [int]
-        :param batch_size: size of random samples from experience buffer [0 < batch_size < buffer_size] [int]
         :param n: parameter n for n-step q-learning (nstep_gradientUpdate() can only be called if this is set larger than zero).
+        :param nn: number of transitions considered for gradient update in case of n-step q-learning
         :param initial_beta: initial values for the beta vectors (default is uniform distribution) [np.ndarray]
         """
         assert type(alpha) is float and alpha >= 0.0 and alpha <= 1.0
         assert type(gamma) is float and gamma >= 0.0 and gamma <= 1.0
-        assert type(buffer_size) is int and buffer_size > batch_size
-        assert type(batch_size) is int and batch_size > 0
+        assert type(buffer_size) is int and buffer_size > 0
         assert self.training_mode == False
 
         self.logger.info(f"Setting up Q-Learning Model for training.")
@@ -149,10 +144,10 @@ class QLearningModel:
         self.alpha = alpha
         self.gamma = gamma
         self.buffer_size = buffer_size
-        self.batch_size = batch_size
         self.n = n
         #self.nn = nn                                                                      # TODO: remove/replace this parameter everywhere
         self.gamma_matrix = np.zeros((buffer_size,buffer_size))                            #temporary ?
+
 
         # one buffer for each attribute of Transition type
         self.buffer_X = np.zeros((buffer_size, self.num_features))
@@ -185,8 +180,7 @@ class QLearningModel:
             self.num_actions,
             self.alpha,
             self.gamma,
-            self.buffer_size,
-            self.batch_size
+            self.buffer_size
         ])
 
         file = open(self.path, 'wb')
@@ -256,23 +250,23 @@ class QLearningModel:
         X = self.buffer_X                       # dim: (buffer_size x num_features)
         nextX = self.buffer_nextX               # dim: (buffer_size x num_features)
         reward = self.buffer_reward             # dim: (buffer_size x 1)
-        action = self.buffer_action
+        action = self.buffer_action             # dim: (buffer_size x 1)
 
         # find maximum value of Q for nextX and any possible action
         # lecture reference: p. 160 
-        # TODO: these dimensions are not right anymore
-        # dim:  max((num_actions x num_features) * (num_actions x num_features)^T, axis=2)
-        #     = max((num_actions x num_actions), axis=1)
-        #     = (num_actions x 1) 
+        # dim:  max((buffer_size x num_features) * (num_actions x num_features)^T, axis=1)
+        #     = max((buffer_size x num_actions), axis=1)
+        #     = (buffer_size x 1) 
         maxQ = np.max(np.matmul(nextX, self.beta.T), axis=1)
 
         # calculate expected response Y
-        # # lecture reference: p. 160
-        # dim:  (num_actions x batch_size x 1) + ((1x1) * (num_actions x batch_size x 1))
-        #     = (num_actions x batch_size x 1)
+        # lecture reference: p. 160
+        # dim:  (buffer_size x 1) + ((1x1) * (buffer_size x 1))
+        #     = (buffer_size x 1)
         Y = reward + (self.gamma * maxQ)
 
-        # generate a batch (= random subset of the experience buffer) for each beta-vector
+        # generate a batch with the respective transitions for each beta-vector
+        # e.g., the batch for the beta-vector for action 0 does only contain transitions with action 0
         for i in range(self.num_actions):
             sel = np.where(action == i)[0]
 
@@ -285,8 +279,6 @@ class QLearningModel:
                 #     = (num_features x 1) + (1x1) * (num_features x 1)
                 #     = (num_features x 1)
                 self.beta[i] = self.beta[i] + (self.alpha / sel.size) * np.sum((X[sel].T * (Y[sel] - np.matmul(X[sel], self.beta[i]))).T, axis=0)
-
-        #print(self.beta)
 
 
     def nstep_gradientUpdate(self):
@@ -312,7 +304,7 @@ class QLearningModel:
             X = self.buffer_nextX                   # dim: (buffer_size x num_features)
             nextX = self.buffer_nextX               # dim: (buffer_size x num_features)
             reward = self.buffer_reward             # dim: (buffer_size x 1)
-            action = self.buffer_action
+            action = self.buffer_action             # dim: (buffer_size x 1)
 
             #calculate maxQ
             maxQ = np.max(np.matmul(nextX, self.beta.T), axis=1)

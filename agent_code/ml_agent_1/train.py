@@ -13,27 +13,26 @@ ALPHA               = 0.0001
 GAMMA               = 0.6
 BUFFER_SIZE         = 50
 
-# how often updates are made in N-step Q-learning:
-N                   = 6
-# the real N in N-step Q-learning:
-#NN                  = 6
+# the N in N-step Q-learning
+N                   = 0
 
-INITIAL_BETA = np.array([[1,-0.1,-0.1,-0.1],
-                        [-0.1, 1,-0.1,-0.1],
-                        [-0.1,-0.1,1,-0.1],
-                        [-0.1,-0.1,-0.1,1],
-                        [-0.1,-0.1,-0.1,-0.1],
-                        [-0.5,-0.5,-0.5,-0.5],
+
+# this array can be filled with a initial guess for beta, such that the model converges faster
+INITIAL_BETA = np.array(
+    [[1,-0.1,-0.1,-0.1],
+    [-0.1, 1,-0.1,-0.1],
+    [-0.1,-0.1,1,-0.1],
+    [-0.1,-0.1,-0.1,1],
+    [-0.1,-0.1,-0.1,-0.1],
+    [-0.5,-0.5,-0.5,-0.5],
 ])
 
-# Measurements
-MEASUREMENT =   True
+# Turn output of measurement file on or off
+MEASUREMENT = True
 
 # Events
 MOVED_TO_COIN = 'MOVED_TO_COIN'
 MOVED_TO_CRATE = 'MOVED_TO_CRATE'
-MOVED_FROM_BOMB = 'MOVED_FROM_BOMB'
-MOVED_FROM_EXPLOSION = 'MOVED_FROM_EXPLOSION'
 MOVED_FROM_BOMBEXPL = 'MOVED_FROM_BOMBEXPL'
 PLACED_BOMB_WELL = 'PLACED_BOMB_WELL'
 
@@ -64,9 +63,11 @@ def setup_training(self):
 
     :param self: This object is passed to all callbacks and you can set arbitrary values.
     """
+    # set hyperparameters
     self.alpha = ALPHA
     self.gamma = GAMMA
     self.buffer_size = BUFFER_SIZE
+
 
     self.n = N
     #self.nn = NN
@@ -76,10 +77,11 @@ def setup_training(self):
     #self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, n=self.n, initial_beta=INITIAL_BETA)
     self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, n=self.n)
 
+
     # file name for measurements 
-    if MEASUREMENT: # TODO: epsilon decreasing!
+    if MEASUREMENT:
         date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        self.measurement_file = f"measurement_{date_time}_{str(self.epsilon)}_{str(ALPHA)}_{str(GAMMA)}_{str(BATCH_SIZE)}_{str(BUFFER_SIZE)}.csv"
+        self.measurement_file = f"measurement_{date_time}_{str(self.epsilon)}_{str(EPSILON_DECREASE)}_{str(EPSILON_MIN)}_{str(ALPHA)}_{str(GAMMA)}_{str(BUFFER_SIZE)}_{str(N)}_{str(self.model.num_features)}.csv"
 
     
 def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_state: dict, events: List[str]):
@@ -99,7 +101,7 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     :param new_game_state: The state the agent is in now.
     :param events: The events that occurred when going from  `old_game_state` to `new_game_state`
     """
-    if not old_game_state or not new_game_state:    #TODO what about final states?
+    if not old_game_state or not new_game_state:
         return
 
     self.logger.debug(f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}')
@@ -114,29 +116,24 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     coindensity = old_features[COIN_DENSITY_U:COIN_DENSITY_L]
     escape = old_features[ESCAPE_U:ESCAPE_M]
     cratedensity = old_features[CRATE_DENSITY_U:CRATE_DENSITY_L]
-    #bombdensity = old_features[featurecounter:featurecounter+5]
-    #explosiondensity = old_features[featurecounter:featurecounter+5]
     cornersandblast = old_features[CORNERS_AND_BLAST]
     
     if last_action == np.argmax(coindensity) and np.argmax(coindensity) != 0:
         events.append("MOVED_TO_COIN")
+
     if last_action == np.argmax(escape) and np.argmax(escape) != 0: # 0 means no bombs
         events.append("MOVED_FROM_BOMBEXPL")
+
     if last_action == np.argmax(cratedensity) and np.argmax(cratedensity) != 0:
         events.append("MOVED_TO_CRATE")
-    #if last_action == np.argmax(bombdensity) and np.argmax(bombdensity) != 1:
-    #    events.append("MOVED_FROM_BOMB")
-    #if last_action == np.argmax(explosiondensity) and np.argmax(explosiondensity) != 1:
-    #    events.append("MOVED_FROM_EXPLOSION")
+
     if self_action == 'BOMB' and cornersandblast >= 1.0:
         events.append("PLACED_BOMB_WELL")
 
-    
     # state_to_features is defined in callbacks.py
     # The feature vector for the new state is used here for the first time, so we have to compute it first.
     # It can then be used by every other function without having to call state_to_features() again.
     self.current_features = state_to_features(new_game_state)
-    #print(self.current_features)
 
     t = Transition(
         old_features,
@@ -222,12 +219,10 @@ def reward_from_events(self, events: List[str]) -> int:
         e.OPPONENT_ELIMINATED: 0,
         e.SURVIVED_ROUND: 100,
 
-        MOVED_TO_COIN: 2,
+        MOVED_TO_COIN: 4,
         MOVED_TO_CRATE: 1,
-        #MOVED_FROM_BOMB: 4,
-        #MOVED_FROM_EXPLOSION: 4,
-        MOVED_FROM_BOMBEXPL: 20,
-        PLACED_BOMB_WELL: 17
+        MOVED_FROM_BOMBEXPL: 7,
+        PLACED_BOMB_WELL: 16
     }
 
     reward_sum = 0
