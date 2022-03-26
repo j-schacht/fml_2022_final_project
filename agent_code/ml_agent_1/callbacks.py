@@ -9,7 +9,7 @@ from agent_code.coin_collector_agent.callbacks import act as coin_collector_act
 EPSILON_START = 1.0
 
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
-NUM_FEATURES = 14
+NUM_FEATURES = 9
 
 """
 TODO
@@ -110,7 +110,7 @@ def state_to_features(game_state: dict) -> np.array:
 
     wallsmap = (abs(field)-field)*0.5
     notwallsmap = -wallsmap+1
-    cratesmap = (field-abs(field))*0.5
+    cratesmap = (field+abs(field))*0.5
 
     # map of spaces that are free to move on
     freefield = np.ones((cols,rows)) -wallsmap -bombsmap -othersmap
@@ -154,9 +154,12 @@ def state_to_features(game_state: dict) -> np.array:
     # number of objects that can be destroyed in each direction
     features['blastables'] = find_blastables(ownposmap, blastablesmap, notwallsmap, crossmatrix, uppermatrix)
 
+    #print(features['freecorners'])
+    #print(features['blastables'])
+
     # feature to determine wether a bomb should be dropped
     freecorners = sum(features['freecorners'])
-    features['cornersandblast'] = [sum(features['blastables'])*freecorners/(freecorners+2)]
+    features['cornersandblast'] = [sum(features['blastables'])*freecorners/(freecorners+1)]
     '''
     #if freecorners+2 == 0: # TODO: Solve divide by 0 issue
           #print(features['freecorners']) 
@@ -225,8 +228,8 @@ def state_to_features(game_state: dict) -> np.array:
     # cornersandblast:1
     #usedfeatures = ['freedomdensity','coindensity','freecorners','blastables','closest_coin_distance','closest_3_coins_distance']
     #usedfeatures = ['coindensity','cratedensity','bombexplcombined','cornersandblast']
-    usedfeatures = ['coindensity', 'escape', 'cratedensity', 'cornersandblast']
-    #usedfeatures = ['coindensity']
+    #usedfeatures = ['coindensity', 'escape', 'cratedensity', 'cornersandblast']
+    usedfeatures = ['coindensity', 'escape']
     featurearray = features_dict_to_array(features, usedfeatures)
     return featurearray
 
@@ -268,7 +271,7 @@ def find_corners(ownmap, freemap, crossmatrix, uppermatrix):
         for j in range(3):
             cornermap = np.matmul(uppermatrix,cornermap)*freemap
             numberofcorners += np.sum(np.matmul(cornermap,crossmatrix)*freemap)
-        freecorners.append(numberofcorners/4)
+        freecorners.append(numberofcorners)
         ownmap = np.rot90(ownmap)
         freemap = np.rot90(freemap)
     return freecorners
@@ -282,7 +285,7 @@ def find_blastables(ownmap, blastablesmap, notwallsmap, crossmatrix, uppermatrix
         for j in range(3):
             blastmap = np.matmul(uppermatrix,blastmap)*notwallsmap
             numberofblastables += np.sum(blastmap*notwallsmap)
-        blastables.append(numberofblastables/3)
+        blastables.append(numberofblastables)
         ownmap = np.rot90(ownmap)
         notwallsmap = np.rot90(notwallsmap)
         blastablesmap = np.rot90(blastablesmap)
