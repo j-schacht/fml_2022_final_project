@@ -1,20 +1,24 @@
 import random
 import numpy as np
-from igraph import * 
 from .qlearning import *
 
-# TODO: temporary
-from agent_code.coin_collector_agent.callbacks import act as coin_collector_act
+# this library is needed for the calculation of some features which we are not using
+# from igraph import *
 
+# These includes are needed if you want to train the agent using act() functions from other agents
+# from agent_code.coin_collector_agent.callbacks import act as coin_collector_act
+# from agent_code.rule_based_agent.callbacks import act as rule_based_act
+
+# all possible actions
+ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
+
+# This is the epsilon to start the training with. 
+# Will be decreased according to EPSILON_DECREASE (see train.py)
 EPSILON_START = 1.0
 
-ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
-NUM_FEATURES = 9
+# number of features that we are currently using (= length of feature vector)
+NUM_FEATURES = 14
 
-"""
-TODO
-- handle final game states?
-"""
 
 def setup(self):
     """
@@ -40,14 +44,14 @@ def act(self, game_state: dict) -> str:
     :param game_state: The dictionary that describes everything on the board.
     :return: The action to take as a string.
     """
-
     # epsilon-greedy policy:
     if self.train and random.random() < self.epsilon:                                  
-        self.logger.debug("Choosing action purely at random.")
-        # 80%: walk in any direction. 10% wait. 10% bomb.
-        action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])
-        #action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .2, .0])
-        #action = coin_collector_act(self, game_state)
+        self.logger.debug("Choosing action according to epsilon-policy.")
+        action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])      # 80%: walk in any direction. 10% wait. 10% bomb.
+        #action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .2, .0])     # 80%: walk in any direction. 20% wait. 0% bomb.
+        #action = coin_collector_act(self, game_state)                      # use act() from coin_collector_agent instead of random.
+        #action = rule_based_act(self, game_state)                          # use act() from rule_based_agent instead of random.
+    
     else:
         self.logger.debug("Querying model for action.")
 
@@ -57,8 +61,11 @@ def act(self, game_state: dict) -> str:
             self.current_features = state_to_features(game_state)
 
         action = ACTIONS[self.model.predictAction(self.current_features)]
-        self.logger.debug(f"Chose action {action}")
 
+    self.logger.debug(f"Chose action {action}")
+    #print(self.current_features)
+    #print(game_state['bombs'])
+    #print(action)
     return action
 
 
@@ -154,16 +161,11 @@ def state_to_features(game_state: dict) -> np.array:
     # number of objects that can be destroyed in each direction
     features['blastables'] = find_blastables(ownposmap, blastablesmap, notwallsmap, crossmatrix, uppermatrix)
 
-    #print(features['freecorners'])
-    #print(features['blastables'])
-
     # feature to determine wether a bomb should be dropped
     freecorners = sum(features['freecorners'])
     features['cornersandblast'] = [sum(features['blastables'])*freecorners/(freecorners+1)]
-    '''
-    #if freecorners+2 == 0: # TODO: Solve divide by 0 issue
-          #print(features['freecorners']) 
     
+    '''    
     # calculate distance to the closest coin using graph algorithms
     if len(coins) > 0:
         cols = field.shape[0] # x
@@ -216,20 +218,15 @@ def state_to_features(game_state: dict) -> np.array:
     if field[ownposx+1,ownposy] == 0:
         features['right_free'] = [1]
     '''
-    # freedomdensity:5
-    # coindensity:4
-    # cratedensity:4
-    # escape : 5
-    # bombexplcombined:1
+    # size of features_
+    #   - coindensity       4
+    #   - cratedensity      4
+    #   - escape            5
+    #   - cornersandblast   1
+    #   - bombexplcombined  1
     # freecorners:4
     # blastables:4
-    # closest_coin_distance:1
-    # closest_3_coins_distance:1
-    # cornersandblast:1
-    #usedfeatures = ['freedomdensity','coindensity','freecorners','blastables','closest_coin_distance','closest_3_coins_distance']
-    #usedfeatures = ['coindensity','cratedensity','bombexplcombined','cornersandblast']
-    #usedfeatures = ['coindensity', 'escape', 'cratedensity', 'cornersandblast']
-    usedfeatures = ['coindensity', 'escape']
+    usedfeatures = ['coindensity', 'escape', 'cratedensity', 'cornersandblast']
     featurearray = features_dict_to_array(features, usedfeatures)
     return featurearray
 
@@ -291,6 +288,7 @@ def find_blastables(ownmap, blastablesmap, notwallsmap, crossmatrix, uppermatrix
         blastablesmap = np.rot90(blastablesmap)
     return blastables
 
+
 def dangerzones(bombsmapcounter, notwallsmap, crossmatrix, uppermatrix):
     dangerzone = np.zeros((bombsmapcounter.shape[0],bombsmapcounter.shape[1]))
     for i in range(4):
@@ -303,6 +301,7 @@ def dangerzones(bombsmapcounter, notwallsmap, crossmatrix, uppermatrix):
         dangerzone = np.rot90(dangerzone)
     dangerzone = dangerzone + bombsmapcounter*4
     return dangerzone
+
 
 def features_dict_to_array(features, usedfeatures):
     featurearray = []
