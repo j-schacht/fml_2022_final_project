@@ -14,11 +14,9 @@ ALPHA               = 0.0001
 GAMMA               = 0.6
 BUFFER_SIZE         = 50
 
-# how often updates are made in N-step Q-learning:
+# the N in N-step Q-learning
 N                   = 0
 
-# the real N in N-step Q-learning:
-NN                  = 6
 
 # this array can be filled with a initial guess for beta, such that the model converges faster
 INITIAL_BETA = np.array(
@@ -69,16 +67,15 @@ def setup_training(self):
     self.alpha = ALPHA
     self.gamma = GAMMA
     self.buffer_size = BUFFER_SIZE
-    self.n = N
-    self.nn = NN
 
     # setup counters
+    self.n = N
     self.counter = 0
-    self.counter_nstep = 0
+    self.buffer_counter = 0
     self.counter_rewards = 0
 
-    #self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE, n=self.n, nn=self.nn, initial_beta=INITIAL_BETA)
-    self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, n=self.n, nn=self.nn)
+    #self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, n=self.n, initial_beta=INITIAL_BETA)
+    self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, n=self.n)
 
     # file name for measurements 
     if MEASUREMENT:
@@ -162,18 +159,18 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     self.model.bufferAddTransition(t)
 
     # do gradient update in q-learning model
-    if self.n == 0:
-        # normal q-learning
-        self.model.gradientUpdate()
-    else:
-        # n-step q-learning
-        if self.counter_nstep % self.n == 1 and self.counter >= BUFFER_SIZE and BUFFER_SIZE <= self.counter_nstep:
-            self.model.nstep_gradientUpdate() 
-            self.counter = self.counter + 1
-            self.counter_nstep = self.counter_nstep + 1
-        else:
-            self.counter = self.counter + 1
-            self.counter_nstep = self.counter_nstep + 1
+    if self.n == 0:         # Q-learning 
+        if self.buffer_counter == self.buffer_size:
+            self.model.gradientUpdate()
+            self.buffer_counter = 0
+        else :
+            self.buffer_counter += 1
+    else:                   # n-step Q-learning
+        if self.buffer_counter == (self.buffer_size - self.n):
+            self.model.nstep_gradientUpdate()
+            self.buffer_counter = 0
+        else :
+            self.buffer_counter += 1
 
 
 def end_of_round(self, last_game_state: dict, last_action: str, events: List[str]):
@@ -205,13 +202,17 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     # reset reward counter
     self.counter_rewards = 0
 
-    if self.n != 0:
-        # only if n-step q-learning
-        self.counter_nstep = 0
-        # make sure that no information gets lost
-        if self.counter >= BUFFER_SIZE:
+    if self.n == 0 :    # Q-learning
+        self.model.gradientUpdate() 
+        self.buffer_counter = 0
+    else :              # n-step Q-learning
+        if self.model.buffer_counter >= self.buffer_size:
+            self.model.nstep_gradientUpdate()
+            self.buffer_counter = 0
+        else :
             self.model.gradientUpdate()
-    
+            self.buffer_counter = 0
+
 
 def reward_from_events(self, events: List[str]) -> int:
     
