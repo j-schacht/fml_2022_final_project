@@ -1,3 +1,4 @@
+from enum import Enum
 import random
 import numpy as np
 from .qlearning import *
@@ -18,6 +19,25 @@ EPSILON_START = 1.0
 
 # number of features that we are currently using (= length of feature vector)
 NUM_FEATURES = 14
+
+# This can be used to address single features in the feature vector.
+# In case of directed features: 
+# U = up, R = right, D = down, L = left, M = middle
+class Feature(Enum):
+    COIN_DENSITY_U      = 0
+    COIN_DENSITY_R      = 1
+    COIN_DENSITY_D      = 2
+    COIN_DENSITY_L      = 3
+    ESCAPE_U            = 4
+    ESCAPE_R            = 5
+    ESCAPE_D            = 6
+    ESCAPE_L            = 7
+    ESCAPE_M            = 8
+    CRATE_DENSITY_U     = 9
+    CRATE_DENSITY_R     = 10
+    CRATE_DENSITY_D     = 11
+    CRATE_DENSITY_L     = 12
+    CORNERS_AND_BLAST   = 13
 
 
 def setup(self):
@@ -63,10 +83,20 @@ def act(self, game_state: dict) -> str:
         action = ACTIONS[self.model.predictAction(self.current_features)]
 
     self.logger.debug(f"Chose action {action}")
-    #print(self.current_features)
+    #print_features(self.current_features)
     #print(game_state['bombs'])
     #print(action)
     return action
+
+
+def print_features(feature_vector):
+    """
+    This function prints the feature vector in a better readable way. Helpful for debugging.
+    """
+    print(f"COIN_DENSITY     : {feature_vector[Feature.COIN_DENSITY_U:Feature.COIN_DENSITY_L]}")
+    print(f"ESCAPE           : {feature_vector[Feature.ESCAPE_U:Feature.ESCAPE_M]}")
+    print(f"CRATE_DENSITY    : {feature_vector[Feature.CRATE_DENSITY_U:Feature.CRATE_DENSITY_L]}")
+    print(f"CORNERS_AND_BLAST: {feature_vector[Feature.CORNERS_AND_BLAST]}")
 
 
 def state_to_features(game_state: dict) -> np.array:

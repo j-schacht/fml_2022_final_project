@@ -2,6 +2,7 @@ from typing import List
 import events as e
 from .callbacks import state_to_features
 from .callbacks import ACTIONS
+from .callbacks import Feature as F
 from .qlearning import *
 from datetime import datetime
 
@@ -35,12 +36,11 @@ MEASUREMENT = True
 # Events
 MOVED_TO_COIN = 'MOVED_TO_COIN'
 MOVED_TO_CRATE = 'MOVED_TO_CRATE'
+MOVED_FROM_CRATE = 'MOVED_FROM_CRATE'
 MOVED_FROM_BOMBEXPL = 'MOVED_FROM_BOMBEXPL'
+MOVED_TO_BOMBEXPL = 'MOVED_TO_BOMBEXPL'
 PLACED_BOMB_WELL = 'PLACED_BOMB_WELL'
 
-# This can be used to address single features in the feature vector.
-# In case of directed features: 
-# U = up, R = right, D = down, L = left, M = middle
 COIN_DENSITY_U      = 0
 COIN_DENSITY_R      = 1
 COIN_DENSITY_D      = 2
@@ -75,6 +75,7 @@ def setup_training(self):
     # setup counters
     self.counter = 0
     self.counter_nstep = 0
+    self.counter_rewards = 0
 
     #self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, BATCH_SIZE, n=self.n, nn=self.nn, initial_beta=INITIAL_BETA)
     self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, n=self.n, nn=self.nn)
@@ -102,12 +103,15 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     :param new_game_state: The state the agent is in now.
     :param events: The events that occurred when going from  `old_game_state` to `new_game_state`
     """
+    # for the gradient update, we need both old_game_state and new_game_state not to be None
     if not old_game_state or not new_game_state:
         return
 
     self.logger.debug(f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}')
 
     # Idea: Add your own events to hand out rewards
+
+    # calculate feature vector for old_game_state if not already calculated
     if not hasattr(self, 'current_features'):
         self.current_features = state_to_features(old_game_state)
 
@@ -119,32 +123,45 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     cratedensity = old_features[CRATE_DENSITY_U:CRATE_DENSITY_L]
     cornersandblast = old_features[CORNERS_AND_BLAST]
     
+    # define custom events 
     if last_action == np.argmax(coindensity) and np.argmax(coindensity) != 0:
         events.append("MOVED_TO_COIN")
 
     if last_action == np.argmax(escape) and np.argmax(escape) != 0: # 0 means no bombs
         events.append("MOVED_FROM_BOMBEXPL")
 
+    if last_action != np.argmax(escape) and np.argmax(escape) != 0: # 0 means no bombs
+        events.append("MOVED_TO_BOMBEXPL")
+
     if last_action == np.argmax(cratedensity) and np.argmax(cratedensity) != 0:
         events.append("MOVED_TO_CRATE")
 
+    if last_action != np.argmax(cratedensity) and np.argmax(cratedensity) != 0:
+        events.append("MOVED_FROM_CRATE")
+
     if self_action == 'BOMB' and cornersandblast >= 1.0:
         events.append("PLACED_BOMB_WELL")
+
+    # calculate reward
+    reward = reward_from_events(self, events)
+    self.counter_rewards = self.counter_rewards + reward
 
     # state_to_features is defined in callbacks.py
     # The feature vector for the new state is used here for the first time, so we have to compute it first.
     # It can then be used by every other function without having to call state_to_features() again.
     self.current_features = state_to_features(new_game_state)
 
+    # push the current transition to the buffer of the q-learning model
     t = Transition(
         old_features,
         ACTIONS.index(self_action),
         self.current_features,
-        reward_from_events(self, events)
+        reward
     )
     
     self.model.bufferAddTransition(t)
 
+    # do gradient update in q-learning model
     if self.n == 0:
         # normal q-learning
         self.model.gradientUpdate()
@@ -182,8 +199,11 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     # store measurement results
     if MEASUREMENT:
         file = open(self.measurement_file, 'a')
-        file.write(f"{str(last_game_state['round'])},{str(last_game_state['self'][1])},{str(last_game_state['step'])}\n")
+        file.write(f"{str(last_game_state['round'])},{str(last_game_state['self'][1])},{str(last_game_state['step'])},{str(self.counter_rewards)}\n")
         file.close()
+
+    # reset reward counter
+    self.counter_rewards = 0
 
     if self.n != 0:
         # only if n-step q-learning
@@ -218,7 +238,9 @@ def reward_from_events(self, events: List[str]) -> int:
 
         MOVED_TO_COIN: 4,
         MOVED_TO_CRATE: 1,
-        MOVED_FROM_BOMBEXPL: 7,
+        MOVED_FROM_CRATE: -1,
+        MOVED_FROM_BOMBEXPL: 20,
+        MOVED_TO_BOMBEXPL: -20,
         PLACED_BOMB_WELL: 16
     }
 
