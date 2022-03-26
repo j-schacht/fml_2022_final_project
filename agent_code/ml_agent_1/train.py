@@ -7,7 +7,7 @@ from datetime import datetime
 
 # --- HYPERPARAMETERS ---
 # EPSILON_START is found in callbacks.py
-EPSILON_DECREASE    = 0.999
+EPSILON_DECREASE    = 0.9995
 EPSILON_MIN         = 0.1
 ALPHA               = 0.0001
 GAMMA               = 0.6
@@ -205,15 +205,15 @@ def reward_from_events(self, events: List[str]) -> int:
         e.MOVED_RIGHT: -2,
         e.MOVED_UP: -2,
         e.MOVED_DOWN: -2,
-        e.WAITED: -6,
+        e.WAITED: -4,
         e.INVALID_ACTION: -10,
 
         e.BOMB_DROPPED: -15,
         e.BOMB_EXPLODED: 0,
 
-        e.CRATE_DESTROYED: 10,
+        e.CRATE_DESTROYED: 5,
         e.COIN_FOUND: 0,
-        e.COIN_COLLECTED: 40,
+        e.COIN_COLLECTED: 10,
 
         e.KILLED_OPPONENT: 100,
         e.KILLED_SELF: -100,
@@ -225,7 +225,7 @@ def reward_from_events(self, events: List[str]) -> int:
         MOVED_TO_CRATE: 1,
         #MOVED_FROM_BOMB: 4,
         #MOVED_FROM_EXPLOSION: 4,
-        MOVED_FROM_BOMBEXPL: 5,
+        MOVED_FROM_BOMBEXPL: 20,
         PLACED_BOMB_WELL: 17
     }
 

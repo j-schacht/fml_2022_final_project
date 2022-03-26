@@ -113,7 +113,7 @@ def state_to_features(game_state: dict) -> np.array:
     cratesmap = (field+abs(field))*0.5
 
     # map of spaces that are free to move on
-    freefield = np.ones((cols,rows)) -wallsmap -bombsmap -othersmap
+    freefield = np.ones((cols,rows)) -wallsmap -bombsmap -othersmap -cratesmap
     
     # map of spaces that have blastable objects
     blastablesmap = cratesmap + othersmap
@@ -139,7 +139,7 @@ def state_to_features(game_state: dict) -> np.array:
     features['cratedensity'].pop(4) # the own position does not contain crates
     
     dangermap = dangerzones(bombsmapcounter, notwallsmap, crossmatrix, uppermatrix)
-    if sum(neighborvalues(ownpos, dangermap)) != 0 or np.sum(explosionmap) != 0:
+    if sum(neighborvalues(ownpos, dangermap + explosionmap)) != 0:
         spacemap = densitymap(freefield, freefield, crossmatrix, weight = 0.5, exponent = 1, iterations = 3)
         escapemap = spacemap - dangermap
         escapemap = escapemap - np.min(escapemap)
@@ -284,7 +284,7 @@ def find_blastables(ownmap, blastablesmap, notwallsmap, crossmatrix, uppermatrix
         blastmap = ownmap.copy()
         for j in range(3):
             blastmap = np.matmul(uppermatrix,blastmap)*notwallsmap
-            numberofblastables += np.sum(blastmap*notwallsmap)
+            numberofblastables += np.sum(blastmap*blastablesmap)
         blastables.append(numberofblastables)
         ownmap = np.rot90(ownmap)
         notwallsmap = np.rot90(notwallsmap)
