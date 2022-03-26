@@ -6,3 +6,18 @@ gamma:                      0.9, 0.8, 0.7, 0.6                              (def
 batch size, buffer size:    (25, 50), (50, 100), (250, 500), (500,1000)     (default: (50, 100))    Jannik
 
 python main.py play --agents ml_agent_1_m? --scenario coin-heaven --train 1 --n-rounds 2000 --no-gui
+
+
+iterations:                 10000
+epsilon (start, decrease, min): 1.0 / 0.9995 / 0.1
+
+alpha:                      1e-3, 5e-4, 1e-4, 5e-5                          (default: 1e-4)         
+gamma:                      0.9, 0.8, 0.7, 0.6, 0.5                         (default: 0.6)          
+batch size, buffer size:    50
+
+Maria:  1e-3 mit allen gammas
+Rudolf: 5e-5 mit allen gammas
+Jannik: 1e-4 mit allen gammas
+        5e-4
+
+python main.py play --agents ml_agent_1_m? --scenario crate-heaven --train 1 --n-rounds 10000 --no-gui
