@@ -117,7 +117,7 @@ class QLearningModel:
             self.beta_new = np.ones(num_features, dtype=bool)
 
 
-    def setupTraining(self, alpha, gamma, buffer_size, batch_size, n=0, initial_beta=None):
+    def setupTraining(self, alpha, gamma, buffer_size, n=0, initial_beta=None):
 
         """
         This function sets up everything needed to train the model. It needs to be called only
@@ -139,7 +139,7 @@ class QLearningModel:
         self.logger.info(f"Setting up Q-Learning Model for training.")
         self.logger.info(f"Hyperparameters: alpha = {alpha}, gamma = {gamma}, buffer_size = {buffer_size}")
         if n > 0:
-            self.logger.info(f"n-step Q-Learning will be used instead of normal Q-Learning. N = {n}, NN = {nn}")
+            self.logger.info(f"n-step Q-Learning will be used instead of normal Q-Learning. N = {n}")
 
         self.alpha = alpha
         self.gamma = gamma
