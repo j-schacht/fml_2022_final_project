@@ -8,10 +8,10 @@ from datetime import datetime
 
 # --- HYPERPARAMETERS ---
 # EPSILON_START is found in callbacks.py
-EPSILON_DECREASE    = 0.9995
-EPSILON_MIN         = 0.1
-ALPHA               = 0.0005
-GAMMA               = 0.5
+EPSILON_DECREASE    = 0.9999
+EPSILON_MIN         = 0.2
+ALPHA               = 0.0001
+GAMMA               = 0.4
 BUFFER_SIZE         = 50
 
 # the N in N-step Q-learning
@@ -19,13 +19,13 @@ N                   = 0
 
 # this array can be filled with a initial guess for beta, such that the model converges faster
 INITIAL_BETA = np.array(
-    [[1,-0.1,-0.1,-0.1],
-    [-0.1, 1,-0.1,-0.1],
-    [-0.1,-0.1,1,-0.1],
-    [-0.1,-0.1,-0.1,1],
-    [-0.1,-0.1,-0.1,-0.1],
-    [-0.5,-0.5,-0.5,-0.5],
-])
+    [[14.97141015,1.945231186,-2.39248853,1.945231186,18.01047431,-5.664865026,-3.043106948,-5.664865026,-3.69905188,0.54690494,-2.502340126,-0.87244139,-2.502340126,-3.787340835],
+    [1.945231186,14.97141015,1.945231186,-2.39248853,-5.664865026,18.01047431,-5.664865026,-3.043106948,-3.69905188,-2.502340126,0.54690494,-2.502340126,-0.87244139,-3.787340835],
+    [-2.39248853,1.945231186,14.97141015,1.945231186,-3.043106948,-5.664865026,18.01047431,-5.664865026,-3.69905188,-0.87244139,-2.502340126,0.54690494,-2.502340126,-3.787340835],
+    [1.945231186,-2.39248853,1.945231186,14.97141015,-5.664865026,-3.043106948,-5.664865026,18.01047431,-3.69905188,-2.502340126,-0.87244139,-2.502340126,0.54690494,-3.787340835],
+    [7.122252978,7.122252978,7.122252978,7.122252978,-3.810384465,-3.810384465,-3.810384465,-3.810384465,12.35256734,-1.738612513,-1.738612513,-1.738612513,-1.738612513,-4.57946556],
+    [5.882506588,5.882506588,5.882506588,5.882506588,-2.835680063,-2.835680063,-2.835680063,-2.835680063,-4.84445162,-2.80931798,-2.80931798,-2.80931798,-2.80931798,1.96707893]]
+)
 
 # Turn output of measurement file on or off
 MEASUREMENT = True
@@ -40,21 +40,7 @@ MOVED_TO_BOMBEXPL = 'MOVED_TO_BOMBEXPL'
 PLACED_BOMB_WELL = 'PLACED_BOMB_WELL'
 PLACED_BOMB_VERY_WELL = 'PLACED_BOMB_VERY_WELL'
 PLACED_BOMB_EXTREMELY_WELL = 'PLACED_BOMB_EXTREMELY_WELL'
-
-COIN_DENSITY_U      = 0
-COIN_DENSITY_R      = 1
-COIN_DENSITY_D      = 2
-COIN_DENSITY_L      = 3
-ESCAPE_U            = 4
-ESCAPE_R            = 5
-ESCAPE_D            = 6
-ESCAPE_L            = 7
-ESCAPE_M            = 8
-CRATE_DENSITY_U     = 9
-CRATE_DENSITY_R     = 10
-CRATE_DENSITY_D     = 11
-CRATE_DENSITY_L     = 12
-CORNERS_AND_BLAST   = 13
+WAITED_TOO_LONG = 'WAITED_TOO_LONG'
 
 
 def setup_training(self):
@@ -75,6 +61,7 @@ def setup_training(self):
     self.counter = 0
     self.buffer_counter = 0
     self.counter_rewards = 0
+    self.counter_waiting = 0
 
     #self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, n=self.n, initial_beta=INITIAL_BETA)
     self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, n=self.n)
@@ -117,28 +104,33 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     old_features = self.current_features
     last_action = ACTIONS.index(self_action)
 
-    coindensity = old_features[COIN_DENSITY_U:COIN_DENSITY_L]
-    escape = old_features[ESCAPE_U:ESCAPE_M]
-    cratedensity = old_features[CRATE_DENSITY_U:CRATE_DENSITY_L]
-    cornersandblast = old_features[CORNERS_AND_BLAST]
-    
+    if self_action == 'WAIT':
+        self.counter_waiting += 1
+    else:
+        self.counter_waiting = 0
+
+    coindensity = old_features[F.COIN_DENSITY_U:F.COIN_DENSITY_L+1]
+    escape = old_features[F.ESCAPE_U:F.ESCAPE_M+1]
+    cratedensity = old_features[F.CRATE_DENSITY_U:F.CRATE_DENSITY_L+1]
+    cornersandblast = old_features[F.CORNERS_AND_BLAST]
+
     # define custom events 
-    if last_action == np.argmax(coindensity) and np.argmax(coindensity) != 0:
+    if last_action == np.argmax(coindensity) and np.max(coindensity) != 0:
         events.append("MOVED_TO_COIN")
 
-    if last_action != np.argmax(coindensity) and np.argmax(coindensity) != 0:
+    if last_action != np.argmax(coindensity) and np.max(coindensity) != 0:
         events.append("MOVED_FROM_COIN")
 
-    if last_action == np.argmax(escape) and np.argmax(escape) != 0: # 0 means no bombs
+    if last_action == np.argmax(escape) and np.max(escape) != 0: # 0 means no bombs
         events.append("MOVED_FROM_BOMBEXPL")
 
-    if last_action != np.argmax(escape) and np.argmax(escape) != 0: # 0 means no bombs
+    if last_action != np.argmax(escape) and np.max(escape) != 0: # 0 means no bombs
         events.append("MOVED_TO_BOMBEXPL")
 
-    if last_action == np.argmax(cratedensity) and np.argmax(cratedensity) != 0:
+    if last_action == np.argmax(cratedensity) and np.max(cratedensity) != 0:
         events.append("MOVED_TO_CRATE")
 
-    if last_action != np.argmax(cratedensity) and np.argmax(cratedensity) != 0:
+    if last_action != np.argmax(cratedensity) and np.max(cratedensity) != 0:
         events.append("MOVED_FROM_CRATE")
 
     if self_action == 'BOMB' and cornersandblast >= 1.49:    # at least three blastables and one corner to hide
@@ -149,6 +141,9 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
 
     elif self_action == 'BOMB' and cornersandblast >= 0.49:  # at least one blastable and one corner to hide
         events.append("PLACED_BOMB_WELL")
+
+    if self.counter_waiting >= 4:
+        events.append("WAITED_TOO_LONG")
 
     # calculate reward
     reward = reward_from_events(self, events)
@@ -168,6 +163,9 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     )
     
     self.model.bufferAddTransition(t)
+
+    #print(events)
+    #print(reward)
 
     # do gradient update in q-learning model
     if self.n == 0:         # Q-learning 
@@ -257,7 +255,9 @@ def reward_from_events(self, events: List[str]) -> int:
 
         PLACED_BOMB_WELL: 15,
         PLACED_BOMB_VERY_WELL: 17,
-        PLACED_BOMB_EXTREMELY_WELL: 20 
+        PLACED_BOMB_EXTREMELY_WELL: 20,
+
+        WAITED_TOO_LONG: -3
     }
 
     reward_sum = 0
