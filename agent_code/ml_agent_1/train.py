@@ -10,8 +10,8 @@ from datetime import datetime
 # EPSILON_START is found in callbacks.py
 EPSILON_DECREASE    = 0.9995
 EPSILON_MIN         = 0.1
-ALPHA               = 0.0001
-GAMMA               = 0.6
+ALPHA               = 0.0005
+GAMMA               = 0.5
 BUFFER_SIZE         = 50
 
 # the N in N-step Q-learning
