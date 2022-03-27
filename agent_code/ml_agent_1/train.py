@@ -42,6 +42,21 @@ PLACED_BOMB_VERY_WELL = 'PLACED_BOMB_VERY_WELL'
 PLACED_BOMB_EXTREMELY_WELL = 'PLACED_BOMB_EXTREMELY_WELL'
 WAITED_TOO_LONG = 'WAITED_TOO_LONG'
 
+COIN_DENSITY_U      = 0
+COIN_DENSITY_R      = 1
+COIN_DENSITY_D      = 2
+COIN_DENSITY_L      = 3
+ESCAPE_U            = 4
+ESCAPE_R            = 5
+ESCAPE_D            = 6
+ESCAPE_L            = 7
+ESCAPE_M            = 8
+CRATE_DENSITY_U     = 9
+CRATE_DENSITY_R     = 10
+CRATE_DENSITY_D     = 11
+CRATE_DENSITY_L     = 12
+CORNERS_AND_BLAST   = 13
+
 
 def setup_training(self):
     """
@@ -104,7 +119,7 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     old_features = self.current_features
     last_action = ACTIONS.index(self_action)
 
-    if self_action == 'WAIT':
+if self_action == 'WAIT':
         self.counter_waiting += 1
     else:
         self.counter_waiting = 0
@@ -113,8 +128,9 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     escape = old_features[F.ESCAPE_U:F.ESCAPE_M+1]
     cratedensity = old_features[F.CRATE_DENSITY_U:F.CRATE_DENSITY_L+1]
     cornersandblast = old_features[F.CORNERS_AND_BLAST]
-
+    
     # define custom events 
+     # define custom events 
     if last_action == np.argmax(coindensity) and np.max(coindensity) != 0:
         events.append("MOVED_TO_COIN")
 
@@ -163,9 +179,6 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     )
     
     self.model.bufferAddTransition(t)
-
-    #print(events)
-    #print(reward)
 
     # do gradient update in q-learning model
     if self.n == 0:         # Q-learning 
