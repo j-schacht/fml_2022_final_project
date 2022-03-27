@@ -186,18 +186,18 @@ def state_to_features(game_state: dict) -> np.array:
         features['escape'] = [0]*5
     
     # number of free corners in each direction
-    features['freecorners'] = find_corners(ownposmap, freefield, crossmatrix, uppermatrix)
+    features['freecorners'] = find_corners(ownposmap, freefield, crossmatrix, uppermatrix) # TODO: direction wrong
 
     # number of objects that can be destroyed in each direction
-    features['blastables'] = find_blastables(ownposmap, blastablesmap, notwallsmap, crossmatrix, uppermatrix)
+    features['blastables'] = find_blastables(ownposmap, blastablesmap, notwallsmap, crossmatrix, uppermatrix) # TODO: direction wrong
 
     # feature to determine wether a bomb should be dropped
     if game_state['self'][2]:
         freecorners = sum(features['freecorners'])
         features['cornersandblast'] = [sum(features['blastables'])*freecorners/(freecorners+1)]
     else:
-        features['cornersandblast'] = [0]
-    
+        features['cornersandblast'] = [0.0]
+
     '''
     # calculate distance to the closest coin using graph algorithms
     if len(coins) > 0:

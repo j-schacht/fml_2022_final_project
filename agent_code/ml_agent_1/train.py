@@ -32,11 +32,14 @@ MEASUREMENT = True
 
 # Events
 MOVED_TO_COIN = 'MOVED_TO_COIN'
+MOVED_FROM_COIN = 'MOVED_FROM_COIN'
 MOVED_TO_CRATE = 'MOVED_TO_CRATE'
 MOVED_FROM_CRATE = 'MOVED_FROM_CRATE'
 MOVED_FROM_BOMBEXPL = 'MOVED_FROM_BOMBEXPL'
 MOVED_TO_BOMBEXPL = 'MOVED_TO_BOMBEXPL'
 PLACED_BOMB_WELL = 'PLACED_BOMB_WELL'
+PLACED_BOMB_VERY_WELL = 'PLACED_BOMB_VERY_WELL'
+PLACED_BOMB_EXTREMELY_WELL = 'PLACED_BOMB_EXTREMELY_WELL'
 
 COIN_DENSITY_U      = 0
 COIN_DENSITY_R      = 1
@@ -123,6 +126,9 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     if last_action == np.argmax(coindensity) and np.argmax(coindensity) != 0:
         events.append("MOVED_TO_COIN")
 
+    if last_action != np.argmax(coindensity) and np.argmax(coindensity) != 0:
+        events.append("MOVED_FROM_COIN")
+
     if last_action == np.argmax(escape) and np.argmax(escape) != 0: # 0 means no bombs
         events.append("MOVED_FROM_BOMBEXPL")
 
@@ -135,7 +141,13 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     if last_action != np.argmax(cratedensity) and np.argmax(cratedensity) != 0:
         events.append("MOVED_FROM_CRATE")
 
-    if self_action == 'BOMB' and cornersandblast >= 1.0:
+    if self_action == 'BOMB' and cornersandblast >= 1.49:    # at least three blastables and one corner to hide
+        events.append("PLACED_BOMB_EXTREMELY_WELL")
+
+    elif self_action == 'BOMB' and cornersandblast >= 0.99:  # at least two blastables and one corner to hide
+        events.append("PLACED_BOMB_VERY_WELL")
+
+    elif self_action == 'BOMB' and cornersandblast >= 0.49:  # at least one blastable and one corner to hide
         events.append("PLACED_BOMB_WELL")
 
     # calculate reward
@@ -236,12 +248,16 @@ def reward_from_events(self, events: List[str]) -> int:
         e.OPPONENT_ELIMINATED: 0,
         e.SURVIVED_ROUND: 100,
 
-        MOVED_TO_COIN: 4,
+        MOVED_TO_COIN: 6,
+        MOVED_FROM_COIN: -6,
         MOVED_TO_CRATE: 1,
         MOVED_FROM_CRATE: -1,
         MOVED_FROM_BOMBEXPL: 20,
         MOVED_TO_BOMBEXPL: -20,
-        PLACED_BOMB_WELL: 16
+
+        PLACED_BOMB_WELL: 15,
+        PLACED_BOMB_VERY_WELL: 17,
+        PLACED_BOMB_EXTREMELY_WELL: 20 
     }
 
     reward_sum = 0
