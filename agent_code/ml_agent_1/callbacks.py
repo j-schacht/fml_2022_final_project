@@ -1,4 +1,3 @@
-from enum import Enum
 import random
 import numpy as np
 from .qlearning import *
@@ -23,7 +22,7 @@ NUM_FEATURES = 14
 # This can be used to address single features in the feature vector.
 # In case of directed features: 
 # U = up, R = right, D = down, L = left, M = middle
-class Feature(Enum):
+class Feature:
     COIN_DENSITY_U      = 0
     COIN_DENSITY_R      = 1
     COIN_DENSITY_D      = 2
@@ -53,6 +52,7 @@ def setup(self):
     """
     self.epsilon = EPSILON_START
     self.model = QLearningModel(NUM_FEATURES, len(ACTIONS), logger=self.logger)
+    #print(self.model.beta)
 
 
 def act(self, game_state: dict) -> str:
@@ -93,9 +93,9 @@ def print_features(feature_vector):
     """
     This function prints the feature vector in a better readable way. Helpful for debugging.
     """
-    print(f"COIN_DENSITY     : {feature_vector[Feature.COIN_DENSITY_U:Feature.COIN_DENSITY_L]}")
-    print(f"ESCAPE           : {feature_vector[Feature.ESCAPE_U:Feature.ESCAPE_M]}")
-    print(f"CRATE_DENSITY    : {feature_vector[Feature.CRATE_DENSITY_U:Feature.CRATE_DENSITY_L]}")
+    print(f"COIN_DENSITY     : {feature_vector[Feature.COIN_DENSITY_U:Feature.COIN_DENSITY_L+1]}")
+    print(f"ESCAPE           : {feature_vector[Feature.ESCAPE_U:Feature.ESCAPE_M+1]}")
+    print(f"CRATE_DENSITY    : {feature_vector[Feature.CRATE_DENSITY_U:Feature.CRATE_DENSITY_L+1]}")
     print(f"CORNERS_AND_BLAST: {feature_vector[Feature.CORNERS_AND_BLAST]}")
 
 
@@ -150,7 +150,7 @@ def state_to_features(game_state: dict) -> np.array:
     cratesmap = (field+abs(field))*0.5
 
     # map of spaces that are free to move on
-    freefield = np.ones((cols,rows)) -wallsmap -bombsmap -othersmap -cratesmap
+    freefield = np.ones((cols,rows)) -wallsmap -bombsmap -othersmap -cratesmap -explosionmap
     
     # map of spaces that have blastable objects
     blastablesmap = cratesmap + othersmap
