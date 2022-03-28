@@ -8,8 +8,8 @@ from datetime import datetime
 
 # --- HYPERPARAMETERS ---
 # EPSILON_START is found in callbacks.py
-EPSILON_DECREASE    = 0.9997
-EPSILON_MIN         = 0.2
+EPSILON_DECREASE    = 0.9996
+EPSILON_MIN         = 0.05
 ALPHA               = 0.0001
 GAMMA               = 0.4
 BUFFER_SIZE         = 50

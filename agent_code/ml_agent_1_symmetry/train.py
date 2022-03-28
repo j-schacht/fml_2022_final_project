@@ -8,8 +8,8 @@ from datetime import datetime
 
 # --- HYPERPARAMETERS ---
 # EPSILON_START is found in callbacks.py
-EPSILON_DECREASE    = 0.9996
-EPSILON_MIN         = 0.05
+EPSILON_DECREASE    = 0.9997
+EPSILON_MIN         = 0.2
 ALPHA               = 0.0001
 GAMMA               = 0.4
 BUFFER_SIZE         = 50
@@ -41,6 +41,9 @@ PLACED_BOMB_WELL = 'PLACED_BOMB_WELL'
 PLACED_BOMB_VERY_WELL = 'PLACED_BOMB_VERY_WELL'
 PLACED_BOMB_EXTREMELY_WELL = 'PLACED_BOMB_EXTREMELY_WELL'
 WAITED_TOO_LONG = 'WAITED_TOO_LONG'
+
+# Feature symmetry information (used in feature_rotate_mirror())
+SYMMETRY_BLOCKS = np.array([F.COIN_DENSITY_U, F.ESCAPE_U, F.CRATE_DENSITY_U])
 
 
 def setup_training(self):
@@ -142,7 +145,7 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     :param events: The events that occurred when going from  `old_game_state` to `new_game_state`
     """
     # for the gradient update, we need both old_game_state and new_game_state not to be None
-    if not old_game_state or not new_game_state or not self_action:
+    if not old_game_state or not new_game_state:
         return
 
     self.logger.debug(f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}')
@@ -202,7 +205,7 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     :param self: The same object that is passed to all of your callbacks.
     """
     # for the gradient update, we need both old_game_state and new_game_state not to be None
-    if not last_game_state or not last_action:
+    if not last_game_state:
         return
 
     self.logger.debug(f'Encountered final game event(s) {", ".join(map(repr, events))}')
@@ -304,3 +307,27 @@ def reward_from_events(self, events: List[str]) -> int:
             reward_sum += game_rewards[event]
     self.logger.info(f"Awarded {reward_sum} for events {', '.join(events)}")
     return reward_sum
+
+
+def feature_rotate_mirror(features):
+    # input: feature vector
+    # output: array of 8 feature vectors (including original feature array)
+    # instructions how to rotate and mirror are represented like this:
+    # [0,5] --> means that values at 0 to 3 will be rotated/mirrored and values at 5 to 8 will be rotated/mirrored
+    
+    rmfeatures = np.zeros((8, NUM_FEATURES))
+    rmfeatures[:] = features.copy()
+    
+    # mirror original features
+    mfeatures = features.copy()
+    for i in SYMMETRY_BLOCKS:
+        mfeatures[i], mfeatures[i+2] = mfeatures[i+2], mfeatures[i]
+
+    # rotate original features and mirrored features
+    for i in SYMMETRY_BLOCKS:
+        for d in range(4):
+            rmfeatures[d][i:i+4] = np.roll(features[i:i+4],d)
+            rmfeatures[d+4][i:i+4] = np.roll(mfeatures[i:i+4],d)
+
+    return rmfeatures
+    
