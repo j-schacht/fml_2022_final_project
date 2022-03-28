@@ -1,6 +1,6 @@
 from typing import List
 import events as e
-from .callbacks import NUM_FEATURES, state_to_features
+from .callbacks import state_to_features
 from .callbacks import ACTIONS
 from .callbacks import Feature as F
 from .qlearning import *
@@ -8,7 +8,7 @@ from datetime import datetime
 
 # --- HYPERPARAMETERS ---
 # EPSILON_START is found in callbacks.py
-EPSILON_DECREASE    = 0.9997
+EPSILON_DECREASE    = 0.9999
 EPSILON_MIN         = 0.2
 ALPHA               = 0.0001
 GAMMA               = 0.4
@@ -71,8 +71,32 @@ def setup_training(self):
         date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         self.measurement_file = f"measurement_{date_time}_{str(self.epsilon)}_{str(EPSILON_DECREASE)}_{str(EPSILON_MIN)}_{str(ALPHA)}_{str(GAMMA)}_{str(BUFFER_SIZE)}_{str(N)}_{str(self.model.num_features)}.csv"
 
+    
+def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_state: dict, events: List[str]):
+    """
+    Called once per step to allow intermediate rewards based on game events.
 
-def custom_events(self, old_game_state, self_action, events):
+    When this method is called, self.events will contain a list of all game
+    events relevant to your agent that occurred during the previous step. Consult
+    settings.py to see what events are tracked. You can hand out rewards to your
+    agent based on these events and your knowledge of the (new) game state.
+
+    This is *one* of the places where you could update your agent.
+
+    :param self: This object is passed to all callbacks and you can set arbitrary values.
+    :param old_game_state: The state that was passed to the last call of `act`.
+    :param self_action: The action that you took.
+    :param new_game_state: The state the agent is in now.
+    :param events: The events that occurred when going from  `old_game_state` to `new_game_state`
+    """
+    # for the gradient update, we need both old_game_state and new_game_state not to be None
+    if not old_game_state or not new_game_state:
+        return
+
+    self.logger.debug(f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}')
+
+    # Idea: Add your own events to hand out rewards
+
     # calculate feature vector for old_game_state if not already calculated
     if not hasattr(self, 'current_features'):
         self.current_features = state_to_features(old_game_state)
@@ -120,35 +144,6 @@ def custom_events(self, old_game_state, self_action, events):
 
     if self.counter_waiting >= 4:
         events.append("WAITED_TOO_LONG")
-    
-    return events
-
-    
-def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_state: dict, events: List[str]):
-    """
-    Called once per step to allow intermediate rewards based on game events.
-
-    When this method is called, self.events will contain a list of all game
-    events relevant to your agent that occurred during the previous step. Consult
-    settings.py to see what events are tracked. You can hand out rewards to your
-    agent based on these events and your knowledge of the (new) game state.
-
-    This is *one* of the places where you could update your agent.
-
-    :param self: This object is passed to all callbacks and you can set arbitrary values.
-    :param old_game_state: The state that was passed to the last call of `act`.
-    :param self_action: The action that you took.
-    :param new_game_state: The state the agent is in now.
-    :param events: The events that occurred when going from  `old_game_state` to `new_game_state`
-    """
-    # for the gradient update, we need both old_game_state and new_game_state not to be None
-    if not old_game_state or not new_game_state:
-        return
-
-    self.logger.debug(f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}')
-
-    # Idea: Add your own events to hand out rewards
-    events = custom_events(self, old_game_state, self_action, events)
 
     # calculate reward
     reward = reward_from_events(self, events)
@@ -157,7 +152,6 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     # state_to_features is defined in callbacks.py
     # The feature vector for the new state is used here for the first time, so we have to compute it first.
     # It can then be used by every other function without having to call state_to_features() again.
-    old_features = self.current_features
     self.current_features = state_to_features(new_game_state)
 
     # push the current transition to the buffer of the q-learning model
@@ -201,49 +195,6 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
 
     :param self: The same object that is passed to all of your callbacks.
     """
-    # for the gradient update, we need both old_game_state and new_game_state not to be None
-    if not last_game_state:
-        return
-
-    self.logger.debug(f'Encountered final game event(s) {", ".join(map(repr, events))}')
-
-    # Idea: Add your own events to hand out rewards
-    events = custom_events(self, last_game_state, last_action, events)
-
-    # calculate reward
-    reward = reward_from_events(self, events)
-    self.counter_rewards = self.counter_rewards + reward
-
-    # state_to_features is defined in callbacks.py
-    # The feature vector for the new state is zero, since this is the final state
-    old_features = self.current_features
-    self.current_features = np.zeros(NUM_FEATURES)
-
-    # push the current transition to the buffer of the q-learning model
-    t = Transition(
-        old_features,
-        ACTIONS.index(last_action),
-        self.current_features,
-        reward
-    )
-    
-    self.model.bufferAddTransition(t)
-
-    #print(events)
-    #print(reward)
-
-    # do the last gradient update
-    if self.n == 0 :    # Q-learning
-        self.model.gradientUpdate() 
-        self.buffer_counter = 0
-    else :              # n-step Q-learning
-        if self.model.buffer_counter >= self.buffer_size:
-            self.model.nstep_gradientUpdate()
-            self.buffer_counter = 0
-        else :
-            self.model.gradientUpdate()
-            self.buffer_counter = 0
-
     # store the model
     self.model.saveModel()
 
@@ -259,6 +210,17 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
 
     # reset reward counter
     self.counter_rewards = 0
+
+    if self.n == 0 :    # Q-learning
+        self.model.gradientUpdate() 
+        self.buffer_counter = 0
+    else :              # n-step Q-learning
+        if self.model.buffer_counter >= self.buffer_size:
+            self.model.nstep_gradientUpdate()
+            self.buffer_counter = 0
+        else :
+            self.model.gradientUpdate()
+            self.buffer_counter = 0
 
 
 def reward_from_events(self, events: List[str]) -> int:
@@ -278,11 +240,11 @@ def reward_from_events(self, events: List[str]) -> int:
         e.COIN_FOUND: 0,
         e.COIN_COLLECTED: 10,
 
-        e.KILLED_OPPONENT: 0,
-        e.KILLED_SELF: 0,
-        e.GOT_KILLED: -30,
+        e.KILLED_OPPONENT: 100,
+        e.KILLED_SELF: -100,
+        e.GOT_KILLED: -100,
         e.OPPONENT_ELIMINATED: 0,
-        e.SURVIVED_ROUND: 0,
+        e.SURVIVED_ROUND: 100,
 
         MOVED_TO_COIN: 6,
         MOVED_FROM_COIN: -6,
