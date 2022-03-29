@@ -14,7 +14,7 @@ ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
 
 # This is the epsilon to start the training with. 
 # Will be decreased according to EPSILON_DECREASE (see train.py)
-EPSILON_START = 1.0
+EPSILON_START = 0.2
 
 # number of features that we are currently using (= length of feature vector)
 NUM_FEATURES = 14
@@ -52,7 +52,6 @@ def setup(self):
     """
     self.epsilon = EPSILON_START
     self.model = QLearningModel(NUM_FEATURES, len(ACTIONS), logger=self.logger)
-    #print(self.model.beta)
 
 
 def act(self, game_state: dict) -> str:
@@ -83,9 +82,6 @@ def act(self, game_state: dict) -> str:
         action = ACTIONS[self.model.predictAction(self.current_features)]
 
     self.logger.debug(f"Chose action {action}")
-    #print_features(self.current_features)
-    #print(game_state['bombs'])
-    #print(action)
     return action
 
 

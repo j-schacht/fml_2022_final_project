@@ -8,8 +8,8 @@ from datetime import datetime
 
 # --- HYPERPARAMETERS ---
 # EPSILON_START is found in callbacks.py
-EPSILON_DECREASE    = 0.9997
-EPSILON_MIN         = 0.2
+EPSILON_DECREASE    = 0.9996
+EPSILON_MIN         = 0.05
 ALPHA               = 0.0001
 GAMMA               = 0.4
 BUFFER_SIZE         = 50
@@ -42,9 +42,6 @@ PLACED_BOMB_VERY_WELL = 'PLACED_BOMB_VERY_WELL'
 PLACED_BOMB_EXTREMELY_WELL = 'PLACED_BOMB_EXTREMELY_WELL'
 WAITED_TOO_LONG = 'WAITED_TOO_LONG'
 
-# Feature symmetry information (used in feature_rotate_mirror())
-SYMMETRY_BLOCKS = np.array([F.COIN_DENSITY_U, F.ESCAPE_U, F.CRATE_DENSITY_U])
-
 
 def setup_training(self):
     """
@@ -67,7 +64,7 @@ def setup_training(self):
     self.counter_waiting = 0
 
     #self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, n=self.n, initial_beta=INITIAL_BETA)
-    self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, n=self.n, feature_action_rm=feature_action_rotate_mirror)
+    self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, n=self.n)
 
     # file name for measurements 
     if MEASUREMENT:
@@ -307,49 +304,3 @@ def reward_from_events(self, events: List[str]) -> int:
             reward_sum += game_rewards[event]
     self.logger.info(f"Awarded {reward_sum} for events {', '.join(events)}")
     return reward_sum
-
-
-def feature_action_rotate_mirror(features, action):
-    # input: feature vector, action
-    # output: array of 8 feature vectors (including original feature array), array of 8 actions
-    # instructions how to rotate and mirror are represented like this:
-    # [0,5] --> means that values at 0 to 3 will be rotated/mirrored and values at 5 to 8 will be rotated/mirrored
-    
-    rmfeatures = np.zeros((8, NUM_FEATURES))
-    rmfeatures[:] = features.copy()
-    
-    # mirror original features
-    mfeatures = features.copy()
-    for i in SYMMETRY_BLOCKS:
-        mfeatures[i], mfeatures[i+2] = mfeatures[i+2], mfeatures[i]
-
-    # rotate original features and mirrored features
-    for i in SYMMETRY_BLOCKS:
-        for d in range(4):
-            rmfeatures[d][i:i+4] = np.roll(features[i:i+4],d)
-            rmfeatures[d+4][i:i+4] = np.roll(mfeatures[i:i+4],d)
-
-    #ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
-    rmaction = np.zeros((8))
-    rmaction[:] = action 
-
-    # if action is WAIT or BOMB
-    if action >= 4:
-        return rmfeatures, rmaction
-
-    # mirror original action
-    if action == 0:
-        maction = 2
-    elif action == 2:
-        maction = 0
-    else:
-        maction = action
-
-    # rotate original action and mirrored action
-    for d in range(4):
-        rmaction[d] = (action + d) % 4
-        rmaction[d+4] = (maction + d) % 4
-
-    return rmfeatures, rmaction 
-
-    

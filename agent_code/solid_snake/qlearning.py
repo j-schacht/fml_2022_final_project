@@ -117,7 +117,7 @@ class QLearningModel:
             self.beta_new = np.ones(num_features, dtype=bool)
 
 
-    def setupTraining(self, alpha, gamma, buffer_size, n=0, initial_beta=None, feature_action_rm=None):
+    def setupTraining(self, alpha, gamma, buffer_size, n=0, initial_beta=None):
 
         """
         This function sets up everything needed to train the model. It needs to be called only
@@ -148,7 +148,6 @@ class QLearningModel:
         #self.nn = nn                                                                      # TODO: remove/replace this parameter everywhere
         self.gamma_matrix = np.zeros((buffer_size,buffer_size))                            #temporary ?
 
-        self.feature_action_rm = feature_action_rm     # TODO: Add comment for this parameter
 
         # one buffer for each attribute of Transition type
         self.buffer_X = np.zeros((buffer_size, self.num_features))
@@ -266,54 +265,20 @@ class QLearningModel:
         #     = (buffer_size x 1)
         Y = reward + (self.gamma * maxQ)
 
-        if not self.feature_action_rm is None:
-            # if a feature rotate and mirror function self.feature_action_rm() is given, use this to generate more training data
-            X_sym = np.zeros((self.buffer_size, 8, self.num_features))
-            action_sym = np.zeros((self.buffer_size, 8))
+        # generate a batch with the respective transitions for each beta-vector
+        # e.g., the batch for the beta-vector for action 0 does only contain transitions with action 0
+        for i in range(self.num_actions):
+            sel = np.where(action == i)[0]
 
-            # by rotating and mirroring all features in the buffer, we obtain 8 feature vectors from one feature vector
-            for i in range(self.buffer_size):
-                X_sym[i], action_sym[i] = self.feature_action_rm(X[i], action[i])
-
-            # TODO: Add comments
-            X_sym = np.reshape(np.transpose(X_sym, axes=(1,0,2)),(self.buffer_size*8,self.num_features))
-            action_sym = action_sym.flatten()
-
-            Y = Y[...,None]
-            Y_sym = np.zeros((self.buffer_size,8))
-            Y_sym[:] = Y.copy()
-            Y_sym = Y_sym.flatten()
-
-            # generate a batch with the respective transitions for each beta-vector
-            # e.g., the batch for the beta-vector for action 0 does only contain transitions with action 0
-            for i in range(self.num_actions):
-                sel = np.where(action_sym == i)[0]
-
-                # calculate the new beta-vectors (= gradient update)
-                if sel.size > 0:
-                    # lecture reference: p. 162
-                    # dim:  (num_features x 1) + (1x1) * sum(((batch_size x num_features)^T . ((batch_size x 1) - (batch_size x num_features) * (num_features x 1)))^T)
-                    #     = (num_features x 1) + (1x1) * sum(((batch_size x num_features)^T .  (batch_size x 1))^T)
-                    #     = (num_features x 1) + (1x1) * sum((batch_size x num_features), axis=0)
-                    #     = (num_features x 1) + (1x1) * (num_features x 1)
-                    #     = (num_features x 1)
-                    self.beta[i] = self.beta[i] + (self.alpha / sel.size) * np.sum((X_sym[sel].T * (Y_sym[sel] - np.matmul(X_sym[sel], self.beta[i]))).T, axis=0)
-
-        else: 
-            # generate a batch with the respective transitions for each beta-vector
-            # e.g., the batch for the beta-vector for action 0 does only contain transitions with action 0
-            for i in range(self.num_actions):
-                sel = np.where(action == i)[0]
-
-                # calculate the new beta-vectors (= gradient update)
-                if sel.size > 0:
-                    # lecture reference: p. 162
-                    # dim:  (num_features x 1) + (1x1) * sum(((batch_size x num_features)^T . ((batch_size x 1) - (batch_size x num_features) * (num_features x 1)))^T)
-                    #     = (num_features x 1) + (1x1) * sum(((batch_size x num_features)^T .  (batch_size x 1))^T)
-                    #     = (num_features x 1) + (1x1) * sum((batch_size x num_features), axis=0)
-                    #     = (num_features x 1) + (1x1) * (num_features x 1)
-                    #     = (num_features x 1)
-                    self.beta[i] = self.beta[i] + (self.alpha / sel.size) * np.sum((X[sel].T * (Y[sel] - np.matmul(X[sel], self.beta[i]))).T, axis=0)
+            # calculate the new beta-vectors (= gradient update)
+            if sel.size > 0:
+                # lecture reference: p. 162
+                # dim:  (num_features x 1) + (1x1) * sum(((batch_size x num_features)^T . ((batch_size x 1) - (batch_size x num_features) * (num_features x 1)))^T)
+                #     = (num_features x 1) + (1x1) * sum(((batch_size x num_features)^T .  (batch_size x 1))^T)
+                #     = (num_features x 1) + (1x1) * sum((batch_size x num_features), axis=0)
+                #     = (num_features x 1) + (1x1) * (num_features x 1)
+                #     = (num_features x 1)
+                self.beta[i] = self.beta[i] + (self.alpha / sel.size) * np.sum((X[sel].T * (Y[sel] - np.matmul(X[sel], self.beta[i]))).T, axis=0)
 
 
     def nstep_gradientUpdate(self):
