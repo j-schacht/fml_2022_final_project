@@ -52,6 +52,7 @@ def setup(self):
     """
     self.epsilon = EPSILON_START
     self.model = QLearningModel(NUM_FEATURES, len(ACTIONS), logger=self.logger)
+    print(self.model.beta)
 
 
 def act(self, game_state: dict) -> str:
@@ -121,6 +122,8 @@ def state_to_features(game_state: dict) -> np.array:
     cols = field.shape[0] # x
     rows = field.shape[1] # y
 
+    explosionmap[explosionmap > 1] = 1
+
     # map with all zeros but the own position
     ownposmap = np.zeros((cols,rows))
     ownposmap[ownposx][ownposy] = 1
@@ -147,6 +150,7 @@ def state_to_features(game_state: dict) -> np.array:
 
     # map of spaces that are free to move on
     freefield = np.ones((cols,rows)) -wallsmap -bombsmap -othersmap -cratesmap -explosionmap
+    freefield[freefield < 0] = 0
     
     # map of spaces that have blastable objects
     blastablesmap = cratesmap + othersmap*2
@@ -178,10 +182,11 @@ def state_to_features(game_state: dict) -> np.array:
         escapemap = escapemap - np.min(escapemap)
         escapemap = escapemap/np.max(escapemap)*(np.ones((cols,rows)) - explosionmap)*freefield
         escapevalues = np.array(neighborvalues(ownpos, escapemap))**3
-        escapevalues = escapevalues/np.max(escapevalues)
+        if not np.max(escapevalues) == 0:
+            escapevalues = escapevalues/np.max(escapevalues)
         features['escape'] = escapevalues.tolist()
     else:
-        features['escape'] = [0]*5
+        features['escape'] = [0.0]*5
     
     # number of free corners in each direction
     features['freecorners'] = find_corners(ownposmap, freefield, crossmatrix, uppermatrix) # TODO: direction wrong
