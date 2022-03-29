@@ -2,13 +2,6 @@ import random
 import numpy as np
 from .qlearning import *
 
-# this library is needed for the calculation of some features which we are not using
-# from igraph import *
-
-# These includes are needed if you want to train the agent using act() functions from other agents
-# from agent_code.coin_collector_agent.callbacks import act as coin_collector_act
-# from agent_code.rule_based_agent.callbacks import act as rule_based_act
-
 # all possible actions
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
 
@@ -18,6 +11,14 @@ EPSILON_START = 1.0
 
 # number of features that we are currently using (= length of feature vector)
 NUM_FEATURES = 14
+
+# number of models for the ensemble
+NUM_MODELS = 2
+
+# if 0: choose next action by asking all models and choosing the action which was suggested the most 
+# (random choice between most suggested actions)
+# if 1: calculate average beta from the betas of all models and use this to make a decision 
+DECISION_MODE = 0
 
 # This can be used to address single features in the feature vector.
 # In case of directed features: 
@@ -51,8 +52,11 @@ def setup(self):
     :param self: This object is passed to all callbacks and you can set arbitrary values.
     """
     self.epsilon = EPSILON_START
-    self.model = QLearningModel(NUM_FEATURES, len(ACTIONS), logger=self.logger)
-    #print(self.model.beta)
+    self.num_models = NUM_MODELS
+    self.models = []
+
+    for i in range(NUM_MODELS):
+        self.models.append(QLearningModel(NUM_FEATURES, len(ACTIONS), path="model_"+str(i), logger=self.logger))
 
 
 def act(self, game_state: dict) -> str:
@@ -69,23 +73,35 @@ def act(self, game_state: dict) -> str:
         self.logger.debug("Choosing action according to epsilon-policy.")
         action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])      # 80%: walk in any direction. 10% wait. 10% bomb.
         #action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .2, .0])     # 80%: walk in any direction. 20% wait. 0% bomb.
-        #action = coin_collector_act(self, game_state)                      # use act() from coin_collector_agent instead of random.
-        #action = rule_based_act(self, game_state)                          # use act() from rule_based_agent instead of random.
     
     else:
-        self.logger.debug("Querying model for action.")
+        self.logger.debug("Querying models for action.")
 
         # in learning mode, the feature vector for the current state is already computed in 
         # game_events_occured(), so we don't have to compute it again.
         if not self.train or not hasattr(self, 'current_features'):
             self.current_features = state_to_features(game_state)
 
-        action = ACTIONS[self.model.predictAction(self.current_features)]
+        # decision making
+        if DECISION_MODE == 0:
+            decisions = np.zeros(len(ACTIONS))
 
-    self.logger.debug(f"Chose action {action}")
-    #print_features(self.current_features)
-    #print(game_state['bombs'])
-    #print(action)
+            for i in range(self.num_models):
+                decisions[self.models[i].predictAction(self.current_features)] += 1
+
+            action = ACTIONS[np.random.choice(np.argwhere(np.where(decisions==np.max(decisions),1,0)).flatten())]
+            self.logger.debug(f"Chose action {action} (via max)")
+
+        elif DECISION_MODE == 1:
+            betas = np.zeros((len(ACTIONS),NUM_FEATURES))
+
+            for i in range(self.num_models):
+                betas += self.models[i].beta
+
+            betas = betas / self.num_models
+            action = ACTIONS[np.argmax(np.matmul(self.current_features, betas.T))]
+            self.logger.debug(f"Chose action {action} (via average)")
+
     return action
 
 
@@ -154,7 +170,7 @@ def state_to_features(game_state: dict) -> np.array:
     # map of spaces that are free to move on
     freefield = np.ones((cols,rows)) -wallsmap -bombsmap -othersmap -cratesmap -explosionmap
     freefield[freefield < 0] = 0
-
+    
     # map of spaces that have blastable objects
     blastablesmap = cratesmap + othersmap*2
 
@@ -204,67 +220,12 @@ def state_to_features(game_state: dict) -> np.array:
     else:
         features['cornersandblast'] = [0.0]
 
-    '''
-    # calculate distance to the closest coin using graph algorithms
-    if len(coins) > 0:
-        cols = field.shape[0] # x
-        rows = field.shape[1] # y
-        coins_np = np.array(coins)
-        coins_flat = coins_np[:,0] * cols + coins_np[:,1]
-
-        g = Graph()
-        g.add_vertices(cols*rows)
-
-        for x in range(1, cols-2):
-            for y in range(1, rows-2):
-                if field[x,y] == 0:
-                    if field[x+1,y] == 0:
-                        g.add_edges([(x*cols+y, (x+1)*cols+y)])
-                    if field[x,y+1] == 0:
-                        g.add_edges([(x*cols+y, x*cols+y+1)])
-
-        coin_distances = g.shortest_paths(source=ownposx*cols+ownposy, target=coins_flat)
-        closest_coin_distance = np.min(coin_distances[0])
-        max3 = min(3, len(coin_distances[0]))
-        closest_3_coins_distance = np.sum(np.partition(coin_distances[0], max3-1)[0:max3])
-
-        if closest_coin_distance == float("inf"):
-            closest_coin_distance = 1000
-        if closest_3_coins_distance == float("inf"):
-            closest_3_coins_distance = 1000
-
-        features['closest_coin_distance'] = [closest_coin_distance]
-        features['closest_3_coins_distance'] = [closest_3_coins_distance]
-    else: 
-        features['closest_coin_distance'] = [1000]
-        features['closest_3_coins_distance'] = [1000]
-    
-    # check which directions are free to move
-    features['up_free'] = [0]
-    features['down_free'] = [0]
-    features['left_free'] = [0]
-    features['right_free'] = [0]
-
-    if field[ownposx,ownposy-1] == 0:
-        features['up_free'] = [1]
-
-    if field[ownposx,ownposy+1] == 0:
-        features['down_free'] = [1]
-
-    if field[ownposx-1,ownposy] == 0:
-        features['left_free'] = [1]
-
-    if field[ownposx+1,ownposy] == 0:
-        features['right_free'] = [1]
-    '''
-    # size of features_
+    # size of features
     #   - coindensity       4
     #   - cratedensity      4
     #   - escape            5
     #   - cornersandblast   1
     #   - bombexplcombined  1
-    # freecorners:4
-    # blastables:4
     usedfeatures = ['coindensity', 'escape', 'cratedensity', 'cornersandblast']
     featurearray = features_dict_to_array(features, usedfeatures)
     return featurearray
