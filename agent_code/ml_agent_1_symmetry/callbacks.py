@@ -125,6 +125,8 @@ def state_to_features(game_state: dict) -> np.array:
     cols = field.shape[0] # x
     rows = field.shape[1] # y
 
+    explosionmap[explosionmap > 1] = 1
+
     # map with all zeros but the own position
     ownposmap = np.zeros((cols,rows))
     ownposmap[ownposx][ownposy] = 1
@@ -151,6 +153,7 @@ def state_to_features(game_state: dict) -> np.array:
 
     # map of spaces that are free to move on
     freefield = np.ones((cols,rows)) -wallsmap -bombsmap -othersmap -cratesmap -explosionmap
+    freefield[freefield < 0] = 0
     
     # map of spaces that have blastable objects
     blastablesmap = cratesmap + othersmap*2
