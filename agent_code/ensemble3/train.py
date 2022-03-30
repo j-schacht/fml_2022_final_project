@@ -13,9 +13,9 @@ EPSILON_MIN         = 0.05
 BUFFER_SIZE         = 50
 
 # the N in N-step Q-learning
-N     = [0, 2]
-ALPHA = [0.0001, 0.0001]
-GAMMA = [0.4, 0.4]
+N     = [0, 5, 10, 15, 20]
+ALPHA = [0.0001, 0.0001, 0.0001, 0.0001, 0.0001]
+GAMMA = [0.4, 0.4, 0.4, 0.4, 0.4]
 
 # Turn output of measurement file on or off
 MEASUREMENT = True
@@ -59,7 +59,7 @@ def setup_training(self):
     # file name for measurements 
     if MEASUREMENT:
         date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        self.measurement_file = f"measurement_{date_time}_{str(self.epsilon)}_{str(EPSILON_DECREASE)}_{str(EPSILON_MIN)}_{str(ALPHA)}_{str(GAMMA)}_{str(BUFFER_SIZE)}_{str(N)}_{str(NUM_FEATURES)}.csv"
+        self.measurement_file = f"measurement_{date_time}_{str(self.epsilon)}_{str(EPSILON_DECREASE)}_{str(EPSILON_MIN)}_{str(BUFFER_SIZE)}_{str(NUM_FEATURES)}.csv"
 
 
 def custom_events(self, old_game_state, self_action, events):
