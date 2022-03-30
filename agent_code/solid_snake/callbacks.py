@@ -52,7 +52,6 @@ def setup(self):
     """
     self.epsilon = EPSILON_START
     self.model = QLearningModel(NUM_FEATURES, len(ACTIONS), logger=self.logger)
-    print(self.model.beta)
 
 
 def act(self, game_state: dict) -> str:

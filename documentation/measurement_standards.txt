@@ -1,0 +1,19 @@
+Training:
+
+game lasts 200 steps
+
+10000 episodes
+
+EPSILON_START = 1.0
+EPSILON_DECREASE = 0.9997
+EPSILON_MIN = 0.1
+
+if epsilon <= EPSILON_MIN: set epsilon to 0
+
+
+Game performance:
+
+game lasts 400 steps
+200 episodes
+performance of a single model: play in classic scenario against one rule_based_agent
+comparison of models: models play against each other in classic scenario

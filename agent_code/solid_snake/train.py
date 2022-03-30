@@ -66,10 +66,27 @@ def setup_training(self):
     #self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, n=self.n, initial_beta=INITIAL_BETA)
     self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, n=self.n)
 
-    # file name for measurements 
+    # generate file name for measurements and store measurement parameters for documentation
     if MEASUREMENT:
         date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        self.measurement_file = f"measurement_{date_time}_{str(self.epsilon)}_{str(EPSILON_DECREASE)}_{str(EPSILON_MIN)}_{str(ALPHA)}_{str(GAMMA)}_{str(BUFFER_SIZE)}_{str(N)}_{str(self.model.num_features)}.csv"
+        self.measurement_file = f"measurement_{date_time}.csv"
+        measurement_info = (
+            f"FILE             = {self.measurement_file}\n"
+            f"MODEL            = {self.model.backup_path}\n"
+            f"EPSILON_START    = {str(self.epsilon)}\n"
+            f"EPSILON_DECREASE = {str(EPSILON_DECREASE)}\n"
+            f"EPSILON_MIN      = {str(EPSILON_MIN)}\n"
+            f"ALPHA            = {str(ALPHA)}\n"
+            f"GAMMA            = {str(GAMMA)}\n"
+            f"N                = {str(N)}\n"
+            f"BUFFER_SIZE      = {str(BUFFER_SIZE)}\n"
+            f"NUM_FEATURES     = {str(NUM_FEATURES)}\n"
+            f"COMMAND          = python main.py play [add here]\n\n"
+            f"-------------------------------------------------------------------------------\n\n"
+        )
+        file = open('measurement_info.txt', 'a')
+        file.write(measurement_info)
+        file.close()
 
 
 def custom_events(self, old_game_state, self_action, events):
@@ -170,9 +187,6 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     
     self.model.bufferAddTransition(t)
 
-    #print(events)
-    #print(reward)
-
     # do gradient update in q-learning model
     if self.n == 0:         # Q-learning 
         if self.buffer_counter == self.buffer_size:
@@ -228,9 +242,6 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     )
     
     self.model.bufferAddTransition(t)
-
-    #print(events)
-    #print(reward)
 
     # do the last gradient update
     if self.n == 0 :    # Q-learning

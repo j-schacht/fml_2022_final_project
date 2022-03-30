@@ -1,6 +1,6 @@
 from typing import List
 import events as e
-from .callbacks import NUM_FEATURES, state_to_features
+from .callbacks import DECISION_MODE, NUM_FEATURES, state_to_features
 from .callbacks import ACTIONS
 from .callbacks import Feature as F
 from .qlearning import *
@@ -56,11 +56,37 @@ def setup_training(self):
     for i in range(self.num_models):
         self.models[i].setupTraining(ALPHA[i], GAMMA[i], BUFFER_SIZE, n=N[i])
 
-    # file name for measurements 
+    # generate file name for measurements and store measurement parameters for documentation
     if MEASUREMENT:
         date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        self.measurement_file = f"measurement_{date_time}_{str(self.epsilon)}_{str(EPSILON_DECREASE)}_{str(EPSILON_MIN)}_{str(BUFFER_SIZE)}_{str(NUM_FEATURES)}.csv"
+        self.measurement_file = f"measurement_{date_time}.csv"
 
+        model_paths = ""
+        for i in range(self.num_models-1):
+            model_paths += "                   "
+            model_paths += self.models[i+1].backup_path
+            model_paths += "\n"
+
+        measurement_info = (
+            f"FILE             = {self.measurement_file}\n"
+            f"NUM_MODELS       = {self.num_models}\n"
+            f"DECISION_MODE    = {DECISION_MODE}\n"
+            f"MODELS           = {self.models[0].backup_path}\n{model_paths}"
+            f"EPSILON_START    = {str(self.epsilon)}\n"
+            f"EPSILON_DECREASE = {str(EPSILON_DECREASE)}\n"
+            f"EPSILON_MIN      = {str(EPSILON_MIN)}\n"
+            f"ALPHA            = {str(ALPHA)}\n"
+            f"GAMMA            = {str(GAMMA)}\n"
+            f"N                = {str(N)}\n"
+            f"BUFFER_SIZE      = {str(BUFFER_SIZE)}\n"
+            f"NUM_FEATURES     = {str(NUM_FEATURES)}\n"
+            f"COMMAND          = python main.py play [add here]\n\n"
+            f"-------------------------------------------------------------------------------\n\n"
+        )
+        file = open('measurement_info.txt', 'a')
+        file.write(measurement_info)
+        file.close()
+        
 
 def custom_events(self, old_game_state, self_action, events):
     # calculate feature vector for old_game_state if not already calculated
