@@ -262,6 +262,8 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     # decrease epsilon
     if self.epsilon * EPSILON_DECREASE >= EPSILON_MIN:
         self.epsilon = self.epsilon * EPSILON_DECREASE
+    else:
+        self.epsilon = 0.0
 
     # store measurement results
     if MEASUREMENT:
