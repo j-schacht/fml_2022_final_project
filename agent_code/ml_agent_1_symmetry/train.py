@@ -41,6 +41,7 @@ PLACED_BOMB_WELL = 'PLACED_BOMB_WELL'
 PLACED_BOMB_VERY_WELL = 'PLACED_BOMB_VERY_WELL'
 PLACED_BOMB_EXTREMELY_WELL = 'PLACED_BOMB_EXTREMELY_WELL'
 WAITED_TOO_LONG = 'WAITED_TOO_LONG'
+RUN_IN_LOOP = 'RUN_IN_LOOP'
 
 # Feature symmetry information (used in feature_rotate_mirror())
 SYMMETRY_BLOCKS = np.array([F.COIN_DENSITY_U, F.ESCAPE_U, F.CRATE_DENSITY_U])
@@ -55,18 +56,19 @@ def setup_training(self):
     :param self: This object is passed to all callbacks and you can set arbitrary values.
     """
     # set hyperparameters
+    self.n = N
     self.alpha = ALPHA
     self.gamma = GAMMA
     self.buffer_size = BUFFER_SIZE
 
     # setup counters
-    self.n = N
     self.counter = 0
     self.buffer_counter = 0
     self.counter_rewards = 0
     self.counter_waiting = 0
+    self.counter_loop = 0           # used to detect local loops
+    self.last_actions = [4,4,4]     # used to detect local loops (initially filled with action 'WAIT')
 
-    #self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, n=self.n, initial_beta=INITIAL_BETA)
     self.model.setupTraining(ALPHA, GAMMA, BUFFER_SIZE, n=self.n, feature_action_rm=feature_action_rotate_mirror)
 
     # generate file name for measurements and store measurement parameters for documentation
@@ -90,7 +92,7 @@ def setup_training(self):
         file = open('measurement_info.txt', 'a')
         file.write(measurement_info)
         file.close()
-        
+
 
 def custom_events(self, old_game_state, self_action, events):
     # calculate feature vector for old_game_state if not already calculated
@@ -100,10 +102,21 @@ def custom_events(self, old_game_state, self_action, events):
     old_features = self.current_features
     last_action = ACTIONS.index(self_action)
 
+    # count how long the agent is already waiting
     if self_action == 'WAIT':
         self.counter_waiting += 1
     else:
         self.counter_waiting = 0
+
+    # detect local loops
+    self.last_actions.append(last_action)
+    self.last_actions.pop(0)
+
+    if (self.last_actions[0] == self.last_actions[2] and self.last_actions[0] != self.last_actions[1] 
+        and 4 not in self.last_actions and 5 not in self.last_actions):
+        self.counter_loop += 1
+    else:
+        self.counter_loop = 0
 
     coindensity = old_features[F.COIN_DENSITY_U:F.COIN_DENSITY_L+1]
     escape = old_features[F.ESCAPE_U:F.ESCAPE_M+1]
@@ -140,6 +153,9 @@ def custom_events(self, old_game_state, self_action, events):
 
     if self.counter_waiting >= 4:
         events.append("WAITED_TOO_LONG")
+
+    if self.counter_loop >= 4:
+        events.append("RUN_IN_LOOP")
     
     return events
 
@@ -189,9 +205,6 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     )
     
     self.model.bufferAddTransition(t)
-
-    #print(events)
-    #print(reward)
 
     # do gradient update in q-learning model
     if self.n == 0:         # Q-learning 
@@ -249,9 +262,6 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     
     self.model.bufferAddTransition(t)
 
-    #print(events)
-    #print(reward)
-
     # do the last gradient update
     if self.n == 0 :    # Q-learning
         self.model.gradientUpdate() 
@@ -276,7 +286,7 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     # store measurement results
     if MEASUREMENT:
         file = open(self.measurement_file, 'a')
-        file.write(f"{str(last_game_state['round'])},{str(last_game_state['self'][1])},{str(last_game_state['step'])},{str(self.counter_rewards)}\n")
+        file.write(f"{str(last_game_state['round'])},{str(last_game_state['self'][1])},{str(last_game_state['step'])},{str(int(e.KILLED_SELF in events))},{str(self.counter_rewards)}\n")
         file.close()
 
     # reset reward counter
@@ -317,7 +327,8 @@ def reward_from_events(self, events: List[str]) -> int:
         PLACED_BOMB_VERY_WELL: 17,
         PLACED_BOMB_EXTREMELY_WELL: 20,
 
-        WAITED_TOO_LONG: -3
+        WAITED_TOO_LONG: -3,
+        RUN_IN_LOOP: -6
     }
 
     reward_sum = 0
@@ -370,5 +381,3 @@ def feature_action_rotate_mirror(features, action):
         rmaction[d+4] = (maction + d) % 4
 
     return rmfeatures, rmaction 
-
-    

@@ -18,7 +18,9 @@ NUM_MODELS = 2
 # if 0: choose next action by asking all models and choosing the action which was suggested the most 
 # (random choice between most suggested actions)
 # if 1: calculate average beta from the betas of all models and use this to make a decision 
-DECISION_MODE = 0
+# if 2: same as for 0, but with a probability of DECISION_PROB a random model is asked for the next action
+DECISION_MODE = 1
+DECISION_PROB = 0.1
 
 # This can be used to address single features in the feature vector.
 # In case of directed features: 
@@ -83,7 +85,7 @@ def act(self, game_state: dict) -> str:
             self.current_features = state_to_features(game_state)
 
         # decision making
-        if DECISION_MODE == 0:
+        if DECISION_MODE == 0 or (DECISION_MODE == 2 and random.random() > DECISION_PROB):
             decisions = np.zeros(len(ACTIONS))
 
             for i in range(self.num_models):
@@ -101,6 +103,9 @@ def act(self, game_state: dict) -> str:
             betas = betas / self.num_models
             action = ACTIONS[np.argmax(np.matmul(self.current_features, betas.T))]
             self.logger.debug(f"Chose action {action} (via average)")
+
+        elif DECISION_MODE == 2:
+            action = ACTIONS[random.choice(self.models).predictAction(self.current_features)]            
 
     return action
 

@@ -31,6 +31,7 @@ PLACED_BOMB_WELL = 'PLACED_BOMB_WELL'
 PLACED_BOMB_VERY_WELL = 'PLACED_BOMB_VERY_WELL'
 PLACED_BOMB_EXTREMELY_WELL = 'PLACED_BOMB_EXTREMELY_WELL'
 WAITED_TOO_LONG = 'WAITED_TOO_LONG'
+RUN_IN_LOOP = 'RUN_IN_LOOP'
 
 
 def setup_training(self):
@@ -52,6 +53,8 @@ def setup_training(self):
     self.buffer_counter = np.zeros(self.num_models)
     self.counter_rewards = 0
     self.counter_waiting = 0
+    self.counter_loop = 0           # used to detect local loops
+    self.last_actions = [4,4,4]     # used to detect local loops (initially filled with action 'WAIT')
 
     for i in range(self.num_models):
         self.models[i].setupTraining(ALPHA[i], GAMMA[i], BUFFER_SIZE, n=N[i])
@@ -96,10 +99,21 @@ def custom_events(self, old_game_state, self_action, events):
     old_features = self.current_features
     last_action = ACTIONS.index(self_action)
 
+    # count how long the agent is already waiting
     if self_action == 'WAIT':
         self.counter_waiting += 1
     else:
         self.counter_waiting = 0
+
+    # detect local loops
+    self.last_actions.append(last_action)
+    self.last_actions.pop(0)
+
+    if (self.last_actions[0] == self.last_actions[2] and self.last_actions[0] != self.last_actions[1] 
+        and 4 not in self.last_actions and 5 not in self.last_actions):
+        self.counter_loop += 1
+    else:
+        self.counter_loop = 0
 
     coindensity = old_features[F.COIN_DENSITY_U:F.COIN_DENSITY_L+1]
     escape = old_features[F.ESCAPE_U:F.ESCAPE_M+1]
@@ -136,6 +150,9 @@ def custom_events(self, old_game_state, self_action, events):
 
     if self.counter_waiting >= 4:
         events.append("WAITED_TOO_LONG")
+
+    if self.counter_loop >= 4:
+        events.append("RUN_IN_LOOP")
     
     return events
 
@@ -268,7 +285,7 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     # store measurement results
     if MEASUREMENT:
         file = open(self.measurement_file, 'a')
-        file.write(f"{str(last_game_state['round'])},{str(last_game_state['self'][1])},{str(last_game_state['step'])},{str(self.counter_rewards)}\n")
+        file.write(f"{str(last_game_state['round'])},{str(last_game_state['self'][1])},{str(last_game_state['step'])},{str(int(e.KILLED_SELF in events))},{str(self.counter_rewards)}\n")
         file.close()
 
     # reset reward counter
@@ -309,7 +326,8 @@ def reward_from_events(self, events: List[str]) -> int:
         PLACED_BOMB_VERY_WELL: 17,
         PLACED_BOMB_EXTREMELY_WELL: 20,
 
-        WAITED_TOO_LONG: -3
+        WAITED_TOO_LONG: -3,
+        RUN_IN_LOOP: -6
     }
 
     reward_sum = 0

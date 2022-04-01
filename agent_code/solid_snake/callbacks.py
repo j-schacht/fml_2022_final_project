@@ -15,7 +15,7 @@ ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
 
 # This is the epsilon to start the training with. 
 # Will be decreased according to EPSILON_DECREASE (see train.py)
-EPSILON_START = 0.5
+EPSILON_START = 0.0
 
 # number of features that we are currently using (= length of feature vector)
 NUM_FEATURES = 14

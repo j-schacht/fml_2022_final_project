@@ -6,6 +6,12 @@ Attempts for improving performance:
     - finding optimal hyperparameters by running multiple training processes simultaneously to utilize CPU resources 
       and unsing multiple devices
 
+General:
+    - we did feature debugging in every step for all new features: 
+        We used the turn-based mode, output the features and compared the output to expected outcome step by step.
+    - in case of undefined behaviour: going through the game step by step, calculating features/events/rewards/... by hand
+        and comparing to the actual outcome, which we printed to the console
+
 Step 00: First tries
     - problem at first: values for beta were exploding
     - attempts:
@@ -21,9 +27,9 @@ Step 00: First tries
     - modification of the epsilon policy: use act() function of rule_based_agent or coin_collector_agent instead
       of choosing a random action
 
-Step 01: Making the agent collect coins 
+Step 01: Making the agent navigate and collect coins
     - used coindensity features only (1 feature for each direction --> 4 features total)
-    - trained without other agents in coin-heaven
+    - trained without other agents in coin-heaven (no crates, 50 coins)
     - reduced game time from 400 to 200 to improve training speed
     - modified epsilon policy, such that bombs are not dropped randomly (p=[.2, .2, .2, .2, .2, 0])
     - initialized beta with uniform distribution (but also created an initial beta which leads to a faster convergence)
@@ -59,10 +65,12 @@ Step 01: Making the agent collect coins
         Agent collects coins very well. It only sometimes gets stuck, which is due to the radius of the coin density 
         feature (higher radius needs more performance and would be slower). We expect this to not be a problem later, 
         since we will add other features causing the agent to act.
+    - git reference: 767cd2c (?) (there are mistakes in this version!)
 
 Step 02: Making the agent protect itself from bombs
+    - before the agent learns how to destroy crates, it must learn not to blow up itself
     - using the model trained in step 01, which can already collect coins
-    - added bombexplcombined feature (1 feature for each direction + own position)
+    - added escape feature (1 feature for each direction + own position)
     - 9 features in total
     - trained without other agents in coin-heaven
     - epsilon-policy does now allow random bomb drops (p=[.2, .2, .2, .2, .1, .1])
@@ -93,3 +101,64 @@ Step 02: Making the agent protect itself from bombs
         very well (better than the rule_based_agent most of the time) and it manages to escape all bombs of its 
         opponent. Sometimes, it still gets stuck, but less often. In this scenario it can even win against the
         rule_based_agent.
+    - git reference: 0b45b38 (there are mistakes in this version!)
+
+Step 03: Making the agent to destroy crates and find hidden coins
+    - using the model trained in step 02, which can already collect coins and escape bombs
+    - added crate-density feature (1 feature for each direction = 4)
+    - added cornersandblast feature (1 feature)
+    - now 14 features in total
+    - coin-heaven scenario does not have crates, classic scenario is too hard to start with (agent can barely move)
+    - created a new scenario "crate-heaven", which has 40 coins and a crate density of 0.3
+    - trained without other agents in crate-heaven
+    - kept epsilon-policy
+    - the agent should learn to place bombs, such that it destroys crates and reveals hidden coins
+    - kept game time at 200 for this step to improve training speed
+    - introduced new event "MOVED_TO_CRATE" which is triggered if the agent does one step towards highest crate density
+    - introduced new event "PLACED_BOMB_WELL" which is triggered if the agent places a bomb such that it destroys two or more crates and has at least one corner to hide (cornersandblast >= 1.0)
+    - relevant rewards:
+        e.MOVED_LEFT: -2,
+        e.MOVED_RIGHT: -2,
+        e.MOVED_UP: -2,
+        e.MOVED_DOWN: -2,
+        e.WAITED: -4,
+        e.INVALID_ACTION: -10,
+        e.BOMB_DROPPED: -15,        # agent should not drop unnecessary bombs 
+        e.CRATE_DESTROYED: 5,       # rewarding the agent for actually destroying a crate
+        e.COIN_COLLECTED: 10,       # rewarding the agent for actually finding a coin
+        e.KILLED_SELF: -100,        # agent should not kill itself
+        e.SURVIVED_ROUND: 100,
+        MOVED_TO_COIN: 2,           # guides the agent towards coins. Higher priority than going towards crates.
+        MOVED_TO_CRATE: 1,          # guides the agent towards crates. It does not fully compensate moving costs but makes moving cheaper. Moving towards crates is lowest priority.
+        MOVED_FROM_BOMBEXPL: 20,    # surviving is highest priority. This must compensate for cost of moving. 
+        PLACED_BOMB_WELL: 17        # this teaches the agent placing bombs efficiently. It compensates for cost of bomb dropping.
+    - hyperparameters:
+        EPSILON_START       = 1.0 
+        EPSILON_DECREASE    = 0.9995
+        EPSILON_MIN         = 0.1
+        ALPHA               = 0.0001
+        GAMMA               = 0.6
+        BUFFER_SIZE         = 50
+        (kept all hyperparameters the same, except EPSILON_DECREASE, which worked fine)
+    - call to train the model:
+        python main.py play --agents ml_agent_1 --scenario crate-heaven --train 1 --n-rounds 10000 --no-gui
+        (now, the model takes even longer to converge)
+    - measurement results:
+        measurements/for_documentation/???
+    - model:
+        measurements/for_documentation/model_step03.npy
+    - result:
+        When playing alone, the agent can destroy most of the crates and collect the coins. It can happen that it does not recognize
+        crates that are too far away, but this is caused by the feature and not a training issue. By increasing the range of the feature, 
+        this can be solved, but training takes more time due to longer feature computation. We expect this issue to become irrelevant as
+        soon as the agent is playing against other agents. 
+        It sometimes happens that the agent gets stuck in three ways:
+            - it just keeps waiting
+            - it moves towards a crate but does not place a bomb, since blowing up a single crate is not optimal 
+            - it is stuck in a local loop, i.e. it moves back and forth between the same positions.
+        It also happens that the agent kills itself by not escaping or running back into explosions.
+
+Step 04: Making the agent deal with opponents
+
+
+Step 05: Improving the agent such that it can compete with the rule_based_agent

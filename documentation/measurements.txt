@@ -21,3 +21,58 @@ Jannik: 1e-4 mit allen gammas
         5e-4
 
 python main.py play --agents ml_agent_1_m? --scenario crate-heaven --train 1 --n-rounds 10000 --no-gui
+
+----------------------------------
+Measurements for report:
+
+For all graphs: Rolling mean with n=500
+
+Hyperparameter evaluation:
+
+        Alpha: 0.001, 0.0001, 0.00001
+        Gamma: 0.6, 0.5, 0.4
+        --> all combinations
+
+        Epsilon Start: 1.0
+        Epsilon Min: 0.1 (set to 0 after this)
+        Epsilon decrease: 0.99967
+
+        Episodes: 10000 (Epsilon is 0 after ~7000 episodes)
+
+        Scenario: Classic
+        Opponents: None
+        Length of the game: 200
+
+-------------------------------------------------
+
+For all following trainings:
+
+        Epsilon Start: 1.0
+        Epsilon Min: 0.1 (set to 0 after this)
+        Epsilon decrease: 0.99967
+
+        Episodes: 10000 (Epsilon is 0 after ~7000 episodes)
+
+        Scenario: Classic
+        Opponents: one rule_based_agent
+        Length of the game: 400
+
+For all following test:
+
+        Episodes: 1000
+        Opponents: one rule_based_agent
+
+solid_snake:
+        - training for intermediate steps (--> training process)
+        - training from zero to compare solid_snake to the ensemble agents
+                --> + testing 
+        - possibly more training/testing with more rule_based_agents or self training
+
+ensemble/nstep training:
+        - evaluate decision modes with optimal Hyperparameters and different n (N = 1 ... 20) + with optimal Hyperparameters and n (N = 0,0,0,0,1,5,10,20)
+        - train single n-step Q-learning models and compare different n (N = 1, 5, 10, 20) + compare to normal Q-learning (already trained before)
+        - optional: what happens if we train the ensemble with different Hyperparameters?
+
+ensemble/nstep testing:
+        - try to use models from Hyperparameter evaluation in ensemble (possibly, higher weight for the better models)
+        - performance test for all models from ensemble training

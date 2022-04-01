@@ -13,6 +13,7 @@ if epsilon <= EPSILON_MIN: set epsilon to 0
 
 Game performance:
 
+use this to measure game performance: --save-stats results/[filename].json
 game lasts 400 steps
 200 episodes
 performance of a single model: play in classic scenario against one rule_based_agent

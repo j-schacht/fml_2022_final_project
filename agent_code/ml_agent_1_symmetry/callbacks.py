@@ -8,6 +8,7 @@ from .qlearning import *
 # These includes are needed if you want to train the agent using act() functions from other agents
 # from agent_code.coin_collector_agent.callbacks import act as coin_collector_act
 # from agent_code.rule_based_agent.callbacks import act as rule_based_act
+# from agent_code.rule_based_agent.callbacks import setup as rule_based_setup
 
 # all possible actions
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
@@ -52,7 +53,7 @@ def setup(self):
     """
     self.epsilon = EPSILON_START
     self.model = QLearningModel(NUM_FEATURES, len(ACTIONS), logger=self.logger)
-    #print(self.model.beta)
+    #rule_based_setup(self)
 
 
 def act(self, game_state: dict) -> str:
@@ -83,9 +84,6 @@ def act(self, game_state: dict) -> str:
         action = ACTIONS[self.model.predictAction(self.current_features)]
 
     self.logger.debug(f"Chose action {action}")
-    #print_features(self.current_features)
-    #print(game_state['bombs'])
-    #print(action)
     return action
 
 
@@ -154,7 +152,7 @@ def state_to_features(game_state: dict) -> np.array:
     # map of spaces that are free to move on
     freefield = np.ones((cols,rows)) -wallsmap -bombsmap -othersmap -cratesmap -explosionmap
     freefield[freefield < 0] = 0
-
+    
     # map of spaces that have blastable objects
     blastablesmap = cratesmap + othersmap*2
 
