@@ -79,15 +79,15 @@ For all following test:
 	python main.py play --agent ? rule_based_agent --scenario classic --n-rounds 1000 --no-gui --save-stats results/for_report/[filename].json
 
 solid_snake:
-        - ✓ training for intermediate steps (--> training process)
+        - ✓✓ training for intermediate steps (--> training process)
         - ✓✓ training from zero to compare solid_snake to the ensemble agents
         - ✓✓ testing the trained from zero model 
 	- ✓✓ testing for intermediate steps
         - possibly more training/testing with more rule_based_agents or self training
 
 ensemble/nstep training:
-        - ✓ evaluate decision modes with optimal Hyperparameters and different n (N = 1 ... 20) + with optimal Hyperparameters and n (N = 0,0,0,0,1,5,10,20) --> [ens 1,3,4 + 2,5,6] (modes 1, 0, 2)
-        - ✓ train single n-step Q-learning models and compare different n (N = 1, 5, 10, 20) + compare to normal Q-learning (already trained before) --> [q1 - q4]
+        - (✓) evaluate decision modes with optimal Hyperparameters and different n (N = 1 ... 20) + with optimal Hyperparameters and n (N = 0,0,0,0,1,5,10,20) --> [ens 1,3,4 + 2,5,6] (modes 1, 0, 2)
+        - (✓) train single n-step Q-learning models and compare different n (N = 1, 5, 10, 20) + compare to normal Q-learning (already trained before) --> [q1 - q4]
         - optional: what happens if we train the ensemble with different Hyperparameters (and optimal decision mode)? --> [ens 7]
 
 ensemble/nstep testing:

@@ -66,6 +66,7 @@ Step 01: Making the agent navigate and collect coins
         Agent collects coins very well. It only sometimes gets stuck, which is due to the radius of the coin density 
         feature (higher radius needs more performance and would be slower). We expect this to not be a problem later, 
         since we will add other features causing the agent to act.
+	Learned to to lots of invalid actions
     - git reference: 767cd2c (?) (there are mistakes in this version!)
 
 Step 02: Making the agent protect itself from bombs
