@@ -1,0 +1,14 @@
+FILE             = measurement_2022-04-01_18-08-29.csv
+MODEL            = model_backup\model_2022-04-01_18-08-29.npy
+EPSILON_START    = 1.0
+EPSILON_DECREASE = 0.99967
+EPSILON_MIN      = 0.1
+ALPHA            = 1e-05
+GAMMA            = 0.4
+N                = 0
+BUFFER_SIZE      = 50
+NUM_FEATURES     = 14
+COMMAND          = python main.py play [add here]
+
+-------------------------------------------------------------------------------
+

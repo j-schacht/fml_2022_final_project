@@ -11,6 +11,7 @@ General:
         We used the turn-based mode, output the features and compared the output to expected outcome step by step.
     - in case of undefined behaviour: going through the game step by step, calculating features/events/rewards/... by hand
         and comparing to the actual outcome, which we printed to the console
+    - in every step: adding rewards for newly introduced events and adapting the exisiting rewards to the new task, according to our priorities
 
 Step 00: First tries
     - problem at first: values for beta were exploding
@@ -123,15 +124,15 @@ Step 03: Making the agent to destroy crates and find hidden coins
         e.MOVED_DOWN: -2,
         e.WAITED: -4,
         e.INVALID_ACTION: -10,
-        e.BOMB_DROPPED: -15,        # agent should not drop unnecessary bombs 
-        e.CRATE_DESTROYED: 5,       # rewarding the agent for actually destroying a crate
-        e.COIN_COLLECTED: 10,       # rewarding the agent for actually finding a coin
+        e.BOMB_DROPPED: -15,        # agent should not drop unnecessary bombs (but we still lowered the punishment because it is supposed to place bombs)
+        e.CRATE_DESTROYED: 5,       # rewarding the agent for actually destroying a crate (n)
+        e.COIN_COLLECTED: 10,       # rewarding the agent for actually finding a coin (l)
         e.KILLED_SELF: -100,        # agent should not kill itself
         e.SURVIVED_ROUND: 100,
         MOVED_TO_COIN: 2,           # guides the agent towards coins. Higher priority than going towards crates.
-        MOVED_TO_CRATE: 1,          # guides the agent towards crates. It does not fully compensate moving costs but makes moving cheaper. Moving towards crates is lowest priority.
-        MOVED_FROM_BOMBEXPL: 20,    # surviving is highest priority. This must compensate for cost of moving. 
-        PLACED_BOMB_WELL: 17        # this teaches the agent placing bombs efficiently. It compensates for cost of bomb dropping.
+        MOVED_TO_CRATE: 1,          # guides the agent towards crates. It does not fully compensate moving costs but makes moving cheaper. Moving towards crates is lowest priority. (n)
+        MOVED_FROM_BOMBEXPL: 20,    # surviving is highest priority. This must compensate for cost of moving. (h)
+        PLACED_BOMB_WELL: 17        # this teaches the agent placing bombs efficiently. It compensates for cost of bomb dropping. (n)
     - hyperparameters:
         EPSILON_START       = 1.0 
         EPSILON_DECREASE    = 0.9995

@@ -27,7 +27,7 @@ Measurements for report:
 
 For all graphs: Rolling mean with n=500
 
-Hyperparameter evaluation:
+✓✓ Hyperparameter evaluation:
 
         Alpha: 0.001, 0.0001, 0.00001
         Gamma: 0.6, 0.5, 0.4
@@ -43,6 +43,18 @@ Hyperparameter evaluation:
         Opponents: None
         Length of the game: 200
 
+h1 0 0
+h2 0 1
+h3 0 2
+h4 1 0
+h5 1 1
+h6 1 2
+h7 2 0
+h8 2 1
+h9 2 2	
+
+python main.py play --agent solid_snake_h --scenario classic --train 1 --n-rounds 10000 --no-gui
+
 -------------------------------------------------
 
 For all following trainings:
@@ -57,22 +69,33 @@ For all following trainings:
         Opponents: one rule_based_agent
         Length of the game: 400
 
+	python main.py play --agent ? rule_based_agent --scenario classic --train 1 --n-rounds 10000 --no-gui
+
 For all following test:
 
         Episodes: 1000
         Opponents: one rule_based_agent
 
+	python main.py play --agent ? rule_based_agent --scenario classic --n-rounds 1000 --no-gui --save-stats results/for_report/[filename].json
+
 solid_snake:
-        - training for intermediate steps (--> training process)
-        - training from zero to compare solid_snake to the ensemble agents
-                --> + testing 
+        - ✓ training for intermediate steps (--> training process)
+        - ✓✓ training from zero to compare solid_snake to the ensemble agents
+        - ✓✓ testing the trained from zero model 
+	- ✓✓ testing for intermediate steps
         - possibly more training/testing with more rule_based_agents or self training
 
 ensemble/nstep training:
-        - evaluate decision modes with optimal Hyperparameters and different n (N = 1 ... 20) + with optimal Hyperparameters and n (N = 0,0,0,0,1,5,10,20)
-        - train single n-step Q-learning models and compare different n (N = 1, 5, 10, 20) + compare to normal Q-learning (already trained before)
-        - optional: what happens if we train the ensemble with different Hyperparameters?
+        - ✓ evaluate decision modes with optimal Hyperparameters and different n (N = 1 ... 20) + with optimal Hyperparameters and n (N = 0,0,0,0,1,5,10,20) --> [ens 1,3,4 + 2,5,6] (modes 1, 0, 2)
+        - ✓ train single n-step Q-learning models and compare different n (N = 1, 5, 10, 20) + compare to normal Q-learning (already trained before) --> [q1 - q4]
+        - optional: what happens if we train the ensemble with different Hyperparameters (and optimal decision mode)? --> [ens 7]
 
 ensemble/nstep testing:
         - try to use models from Hyperparameter evaluation in ensemble (possibly, higher weight for the better models)
-        - performance test for all models from ensemble training
+        - ✓ performance test for q-learning models
+	- ✓ performance test for decision mode evaluation models (ens 1-6)
+	- performance test for ens 7
+
+what happens if gradient update in every step?
+
+ensembles with N=0 --> possibly compare to solid_snake

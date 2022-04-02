@@ -40,3 +40,18 @@ COMMAND          = python main.py play --agents solid_snake_copy4 rule_based_age
 
 -------------------------------------------------------------------------------
 
+FILE             = measurement_2022-04-02_00-24-59.csv
+MODEL            = model_backup\model_2022-04-02_00-24-59.npy
+EPSILON_START    = 1.0
+EPSILON_DECREASE = 0.99967
+EPSILON_MIN      = 0.1
+ALPHA            = 0.0001
+GAMMA            = 0.6
+N                = 0
+BUFFER_SIZE      = 50
+NUM_FEATURES     = 14
+COMMAND          = python main.py play --agent solid_snake rule_based_agent --scenario classic --train 1 --n-rounds 10000 --no-gui
+
+-------------------------------------------------------------------------------
+
+

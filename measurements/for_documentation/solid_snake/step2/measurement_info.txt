@@ -1,0 +1,14 @@
+FILE             = measurement_2022-04-02_12-08-31.csv
+MODEL            = model_backup\model_2022-04-02_12-08-31.npy
+EPSILON_START    = 1.0
+EPSILON_DECREASE = 0.999
+EPSILON_MIN      = 0.1
+ALPHA            = 0.0001
+GAMMA            = 0.6
+N                = 0
+BUFFER_SIZE      = 50
+NUM_FEATURES     = 9
+COMMAND          = python main.py play --agents solid_snake_step2 --scenario coin-heaven --train 1 --n-rounds 4000 --no-gui
+
+-------------------------------------------------------------------------------
+

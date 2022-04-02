@@ -1,0 +1,5 @@
+training solid_snake with N = 0 took 4:09 h
+training solid_snake with N = 1 took 4:32 h
+training solid_snake with N = 5 took 2:40 h
+training solid_snake with N = 10 took 3:08 h
+training solid_snake with N = 20 took 2:08 h

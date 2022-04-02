@@ -1,0 +1,70 @@
+FILE             = measurement_2022-04-02_00-33-47.csv
+NUM_MODELS       = 20
+DECISION_MODE    = 1
+MODELS           = model_backup\model_0_2022-04-02_00-33-47.npy
+                   model_backup\model_1_2022-04-02_00-33-47.npy
+                   model_backup\model_2_2022-04-02_00-33-47.npy
+                   model_backup\model_3_2022-04-02_00-33-47.npy
+                   model_backup\model_4_2022-04-02_00-33-47.npy
+                   model_backup\model_5_2022-04-02_00-33-47.npy
+                   model_backup\model_6_2022-04-02_00-33-47.npy
+                   model_backup\model_7_2022-04-02_00-33-47.npy
+                   model_backup\model_8_2022-04-02_00-33-47.npy
+                   model_backup\model_9_2022-04-02_00-33-47.npy
+                   model_backup\model_10_2022-04-02_00-33-47.npy
+                   model_backup\model_11_2022-04-02_00-33-47.npy
+                   model_backup\model_12_2022-04-02_00-33-47.npy
+                   model_backup\model_13_2022-04-02_00-33-47.npy
+                   model_backup\model_14_2022-04-02_00-33-47.npy
+                   model_backup\model_15_2022-04-02_00-33-47.npy
+                   model_backup\model_16_2022-04-02_00-33-47.npy
+                   model_backup\model_17_2022-04-02_00-33-47.npy
+                   model_backup\model_18_2022-04-02_00-33-47.npy
+                   model_backup\model_19_2022-04-02_00-33-47.npy
+EPSILON_START    = 1.0
+EPSILON_DECREASE = 0.99967
+EPSILON_MIN      = 0.1
+ALPHA            = [0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001]
+GAMMA            = [0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6]
+N                = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+BUFFER_SIZE      = 50
+NUM_FEATURES     = 14
+COMMAND          = python main.py play --agent ensemble_1 rule_based_agent --scenario classic --train 1 --n-rounds 10000 --no-gui
+
+-------------------------------------------------------------------------------
+
+FILE             = measurement_2022-04-02_16-47-05.csv
+NUM_MODELS       = 20
+DECISION_MODE    = 1
+MODELS           = model_backup\model_0_2022-04-02_16-47-05.npy
+                   model_backup\model_1_2022-04-02_16-47-05.npy
+                   model_backup\model_2_2022-04-02_16-47-05.npy
+                   model_backup\model_3_2022-04-02_16-47-05.npy
+                   model_backup\model_4_2022-04-02_16-47-05.npy
+                   model_backup\model_5_2022-04-02_16-47-05.npy
+                   model_backup\model_6_2022-04-02_16-47-05.npy
+                   model_backup\model_7_2022-04-02_16-47-05.npy
+                   model_backup\model_8_2022-04-02_16-47-05.npy
+                   model_backup\model_9_2022-04-02_16-47-05.npy
+                   model_backup\model_10_2022-04-02_16-47-05.npy
+                   model_backup\model_11_2022-04-02_16-47-05.npy
+                   model_backup\model_12_2022-04-02_16-47-05.npy
+                   model_backup\model_13_2022-04-02_16-47-05.npy
+                   model_backup\model_14_2022-04-02_16-47-05.npy
+                   model_backup\model_15_2022-04-02_16-47-05.npy
+                   model_backup\model_16_2022-04-02_16-47-05.npy
+                   model_backup\model_17_2022-04-02_16-47-05.npy
+                   model_backup\model_18_2022-04-02_16-47-05.npy
+                   model_backup\model_19_2022-04-02_16-47-05.npy
+EPSILON_START    = 0.0
+EPSILON_DECREASE = 0.99967
+EPSILON_MIN      = 0.1
+ALPHA            = [0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001]
+GAMMA            = [0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6]
+N                = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+BUFFER_SIZE      = 50
+NUM_FEATURES     = 14
+COMMAND          = python main.py play [add here]
+
+-------------------------------------------------------------------------------
+
