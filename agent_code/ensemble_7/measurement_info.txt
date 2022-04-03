@@ -1,0 +1,23 @@
+FILE             = measurement_2022-04-02_23-21-04.csv
+NUM_MODELS       = 8
+DECISION_MODE    = 0
+MODELS           = model_backup\model_0_2022-04-02_23-21-04.npy
+                   model_backup\model_1_2022-04-02_23-21-04.npy
+                   model_backup\model_2_2022-04-02_23-21-04.npy
+                   model_backup\model_3_2022-04-02_23-21-04.npy
+                   model_backup\model_4_2022-04-02_23-21-04.npy
+                   model_backup\model_5_2022-04-02_23-21-04.npy
+                   model_backup\model_6_2022-04-02_23-21-04.npy
+                   model_backup\model_7_2022-04-02_23-21-04.npy
+EPSILON_START    = 1.0
+EPSILON_DECREASE = 0.99967
+EPSILON_MIN      = 0.1
+ALPHA            = [0.001, 0.001, 0.001, 0.0005, 0.0005, 0.0005, 0.0001, 0.0001, 0.0001]
+GAMMA            = [0.6, 0.5, 0.4, 0.6, 0.5, 0.4, 0.6, 0.5, 0.4]
+N                = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+BUFFER_SIZE      = 50
+NUM_FEATURES     = 14
+COMMAND          = python main.py play [add here]
+
+-------------------------------------------------------------------------------
+

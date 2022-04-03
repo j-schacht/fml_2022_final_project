@@ -19,7 +19,7 @@ NUM_MODELS = 8
 # (random choice between most suggested actions)
 # if 1: calculate average beta from the betas of all models and use this to make a decision 
 # if 2: same as for 0, but with a probability of DECISION_PROB a random model is asked for the next action
-DECISION_MODE = 1
+DECISION_MODE = 0
 DECISION_PROB = 0.1
 
 # This can be used to address single features in the feature vector.

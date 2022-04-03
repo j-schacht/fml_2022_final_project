@@ -1,0 +1,5 @@
+ensemble_9 has not been trained, but it has been put together from the models we generated during hyperparameter evaluation.
+Therefore, there is no training plot but only the performance test.
+
+ensemble_9.json (every model once = 9 models)
+ensemble_9_weighted.json (the better models with alpha = 1e-4 twice, the others once = 12 models)

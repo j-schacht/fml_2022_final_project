@@ -161,6 +161,6 @@ Step 03: Making the agent to destroy crates and find hidden coins
         It also happens that the agent kills itself by not escaping or running back into explosions.
 
 Step 04: Making the agent deal with opponents
-
+passive strategy
 
 Step 05: Improving the agent such that it can compete with the rule_based_agent
