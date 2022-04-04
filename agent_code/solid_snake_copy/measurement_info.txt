@@ -69,3 +69,17 @@ COMMAND          = python main.py play --agent solid_snake rule_based_agent --sc
 
 -------------------------------------------------------------------------------
 
+FILE             = measurement_2022-04-04_03-51-55.csv
+MODEL            = model_backup\model_2022-04-04_03-51-55.npy
+EPSILON_START    = 0.0
+EPSILON_DECREASE = 0.99967
+EPSILON_MIN      = 0.1
+ALPHA            = 0.0001
+GAMMA            = 0.6
+N                = 0
+BUFFER_SIZE      = 50
+NUM_FEATURES     = 14
+COMMAND          = python main.py play [add here]
+
+-------------------------------------------------------------------------------
+
